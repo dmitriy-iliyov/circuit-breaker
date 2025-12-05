@@ -1,11 +1,11 @@
-package io.github.dmitriyiliyov.circuitbreaker.strategies;
+package io.github.dmitriyiliyov.circuitbreaker.strategies.close;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-public class FixedWindowErrorRateStrategy implements ObserveStrategy {
+public class FixedTimeWindowErrorRateStrategy implements CloseObserveStrategy {
 
     private final Duration ttl;
     private final double threshold;
@@ -13,7 +13,7 @@ public class FixedWindowErrorRateStrategy implements ObserveStrategy {
     private int involveCount;
     private int observableExceptionCount;
 
-    public FixedWindowErrorRateStrategy(Duration ttl, double threshold) {
+    public FixedTimeWindowErrorRateStrategy(Duration ttl, double threshold) {
         this.ttl = ttl;
         this.threshold = threshold;
         reset();
@@ -42,25 +42,26 @@ public class FixedWindowErrorRateStrategy implements ObserveStrategy {
     }
 
     public void handelException(Exception e, Function<Exception, Boolean> checker, Runnable callback) {
-        if (checker.apply(e)) {
-            Instant now = Instant.now();
-            if (observeEnd.isBefore(now)) {
-                reset();
-                involveCount++;
-                observableExceptionCount++;
-                return;
-            }
+        if (!checker.apply(e)) {
+            return;
+        }
+        Instant now = Instant.now();
+        if (now.isAfter(observeEnd)) {
+            reset();
+            involveCount++;
             observableExceptionCount++;
-            double currentFrequency = (double) observableExceptionCount / involveCount;
-            if (currentFrequency >= threshold) {
-                callback.run();
-            }
+            return;
+        }
+        observableExceptionCount++;
+        double currentFrequency = (double) observableExceptionCount / involveCount;
+        if (currentFrequency >= threshold) {
+            callback.run();
         }
     }
 
     @Override
     public void reset() {
-        observeEnd = Instant.now().plusSeconds(ttl.toSeconds());
+        observeEnd = Instant.now().plus(ttl);
         involveCount = 0;
         observableExceptionCount = 0;
     }

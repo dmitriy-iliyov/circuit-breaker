@@ -1,9 +1,9 @@
-package io.github.dmitriyiliyov.circuitbreaker.strategies;
+package io.github.dmitriyiliyov.circuitbreaker.strategies.close;
 
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-public class SimpleMovingAverageStrategy implements ObserveStrategy {
+public class SimpleMovingAverageStrategy implements CloseObserveStrategy {
 
     private final int windowSize;
     private final double threshold;
