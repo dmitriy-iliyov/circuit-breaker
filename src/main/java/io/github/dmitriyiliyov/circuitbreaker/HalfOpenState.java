@@ -1,6 +1,6 @@
 package io.github.dmitriyiliyov.circuitbreaker;
 
-import io.github.dmitriyiliyov.circuitbreaker.strategies.ObserveStrategy;
+import io.github.dmitriyiliyov.circuitbreaker.strategies.half_open.HalfOpenObserveStrategy;
 
 import java.util.function.Supplier;
 
@@ -8,9 +8,9 @@ public class HalfOpenState implements CircuitState {
 
     private final CircuitBreaker circuitBreaker;
     private final CircuitState nextState;
-    private final ObserveStrategy strategy;
+    private final HalfOpenObserveStrategy strategy;
 
-    public HalfOpenState(CircuitBreaker circuitBreaker, CircuitState nextState, ObserveStrategy strategy) {
+    public HalfOpenState(CircuitBreaker circuitBreaker, CircuitState nextState, HalfOpenObserveStrategy strategy) {
         this.circuitBreaker = circuitBreaker;
         this.nextState = nextState;
         this.strategy = strategy;

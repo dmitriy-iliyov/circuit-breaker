@@ -1,6 +1,6 @@
 package io.github.dmitriyiliyov.circuitbreaker;
 
-import io.github.dmitriyiliyov.circuitbreaker.strategies.ObserveStrategy;
+import io.github.dmitriyiliyov.circuitbreaker.strategies.open.OpenObserveStrategy;
 
 import java.util.function.Supplier;
 
@@ -8,9 +8,9 @@ public class OpenState implements CircuitState {
 
     private final CircuitBreaker circuitBreaker;
     private final CircuitState nextState;
-    private final ObserveStrategy strategy;
+    private final OpenObserveStrategy strategy;
 
-    public OpenState(CircuitBreaker circuitBreaker, CircuitState nextState, ObserveStrategy strategy) {
+    public OpenState(CircuitBreaker circuitBreaker, CircuitState nextState, OpenObserveStrategy strategy) {
         this.circuitBreaker = circuitBreaker;
         this.nextState = nextState;
         this.strategy = strategy;
@@ -20,7 +20,6 @@ public class OpenState implements CircuitState {
     public void process(Runnable process) {
         strategy.observe(
                 process,
-                null,
                 () -> circuitBreaker.setState(nextState)
         );
     }
@@ -29,7 +28,6 @@ public class OpenState implements CircuitState {
     public <T> T process(Supplier<T> process) {
         return strategy.observe(
                 process,
-                null,
                 () -> circuitBreaker.setState(nextState)
         );
     }

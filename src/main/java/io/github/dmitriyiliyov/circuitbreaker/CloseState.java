@@ -1,6 +1,6 @@
 package io.github.dmitriyiliyov.circuitbreaker;
 
-import io.github.dmitriyiliyov.circuitbreaker.strategies.ObserveStrategy;
+import io.github.dmitriyiliyov.circuitbreaker.strategies.close.CloseObserveStrategy;
 
 import java.util.function.Supplier;
 
@@ -8,9 +8,9 @@ public class CloseState implements CircuitState {
 
     private final CircuitBreaker circuitBreaker;
     private final CircuitState nextState;
-    private final ObserveStrategy strategy;
+    private final CloseObserveStrategy strategy;
 
-    public CloseState(CircuitBreaker circuitBreaker, CircuitState nextState, ObserveStrategy strategy) {
+    public CloseState(CircuitBreaker circuitBreaker, CircuitState nextState, CloseObserveStrategy strategy) {
         this.circuitBreaker = circuitBreaker;
         this.nextState = nextState;
         this.strategy = strategy;
