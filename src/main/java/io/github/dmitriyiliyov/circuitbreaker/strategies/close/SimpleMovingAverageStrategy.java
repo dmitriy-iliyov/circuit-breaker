@@ -1,5 +1,7 @@
 package io.github.dmitriyiliyov.circuitbreaker.strategies.close;
 
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -10,7 +12,8 @@ public class SimpleMovingAverageStrategy implements CloseObserveStrategy {
     private int [] window;
     private int index;
     private int windowSum;
-    private int actualLyWindowSize;
+    private int actuallyWindowSize;
+    private final Lock lock = new ReentrantLock();
 
     public SimpleMovingAverageStrategy(int windowSize, double threshold) {
         this.windowSize = windowSize;
@@ -48,16 +51,21 @@ public class SimpleMovingAverageStrategy implements CloseObserveStrategy {
     }
 
     private void updateWindow(int value, Runnable callback) {
-        if (actualLyWindowSize >= windowSize) {
-            windowSum -= window[index];
-        } else {
-            actualLyWindowSize++;
-        }
-        windowSum += value;
-        window[index] = value;
-        index = (index + 1) % windowSize;
-        if (actualLyWindowSize == windowSize && (double) windowSum / actualLyWindowSize >= threshold) {
-            callback.run();
+        lock.lock();
+        try {
+            if (actuallyWindowSize >= windowSize) {
+                windowSum -= window[index];
+            } else {
+                actuallyWindowSize++;
+            }
+            windowSum += value;
+            window[index] = value;
+            index = (index + 1) % windowSize;
+            if (actuallyWindowSize == windowSize && (double) windowSum / actuallyWindowSize >= threshold) {
+                callback.run();
+            }
+        } finally {
+            lock.unlock();
         }
     }
 
@@ -66,6 +74,6 @@ public class SimpleMovingAverageStrategy implements CloseObserveStrategy {
         window = new int[windowSize];
         index = 0;
         windowSum = 0;
-        actualLyWindowSize = 0;
+        actuallyWindowSize = 0;
     }
 }

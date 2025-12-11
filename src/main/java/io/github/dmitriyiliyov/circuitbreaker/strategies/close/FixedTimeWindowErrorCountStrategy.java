@@ -2,6 +2,8 @@ package io.github.dmitriyiliyov.circuitbreaker.strategies.close;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -11,6 +13,7 @@ public class FixedTimeWindowErrorCountStrategy implements CloseObserveStrategy {
     private Instant observeEnd;
     private final long threshold;
     private long exceptionsCount;
+    private final Lock lock = new ReentrantLock();
 
     public FixedTimeWindowErrorCountStrategy(Duration ttl, long threshold) {
         this.ttl = ttl;
@@ -42,13 +45,18 @@ public class FixedTimeWindowErrorCountStrategy implements CloseObserveStrategy {
         if (!checker.apply(e)) {
             return;
         }
-        Instant now = Instant.now();
-        if (now.isAfter(observeEnd)) {
-            reset();
-        }
-        exceptionsCount++;
-        if (exceptionsCount >= threshold) {
-            callback.run();
+        lock.lock();
+        try {
+            Instant now = Instant.now();
+            if (now.isAfter(observeEnd)) {
+                reset();
+            }
+            exceptionsCount++;
+            if (exceptionsCount >= threshold) {
+                callback.run();
+            }
+        } finally {
+            lock.unlock();
         }
     }
 

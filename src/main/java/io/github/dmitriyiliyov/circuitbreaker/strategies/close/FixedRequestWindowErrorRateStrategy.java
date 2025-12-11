@@ -1,5 +1,7 @@
 package io.github.dmitriyiliyov.circuitbreaker.strategies.close;
 
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -9,6 +11,7 @@ public class FixedRequestWindowErrorRateStrategy implements CloseObserveStrategy
     private final double threshold;
     private int involveCount;
     private int observableExceptionCount;
+    private Lock lock = new ReentrantLock();
 
     public FixedRequestWindowErrorRateStrategy(int windowSize, double threshold) {
         this.windowSize = windowSize;
@@ -18,7 +21,7 @@ public class FixedRequestWindowErrorRateStrategy implements CloseObserveStrategy
 
     @Override
     public void observe(Runnable process, Function<Exception, Boolean> checker, Runnable callback) {
-        involveCount++;
+        handleRequest();
         try {
             process.run();
         } catch (Exception e) {
@@ -29,7 +32,7 @@ public class FixedRequestWindowErrorRateStrategy implements CloseObserveStrategy
 
     @Override
     public <T> T observe(Supplier<T> process, Function<Exception, Boolean> checker, Runnable callback) {
-        involveCount++;
+        handleRequest();
         try {
             return process.get();
         } catch (Exception e) {
@@ -38,20 +41,33 @@ public class FixedRequestWindowErrorRateStrategy implements CloseObserveStrategy
         }
     }
 
-    public void handelException(Exception e, Function<Exception, Boolean> checker, Runnable callback) {
-        if (!checker.apply(e)) {
-            return;
-        }
-        if (involveCount >= windowSize) {
-            reset();
+    public void handleRequest() {
+        lock.lock();
+        try {
             involveCount++;
-            observableExceptionCount++;
-            return;
+            if (involveCount >= windowSize) {
+                reset();
+            }
+        } finally {
+            lock.unlock();
         }
-        observableExceptionCount++;
-        double currentFrequency = (double) observableExceptionCount / involveCount;
-        if (currentFrequency >= threshold) {
-            callback.run();
+    }
+
+    public void handelException(Exception e, Function<Exception, Boolean> checker, Runnable callback) {
+        lock.lock();
+        try {
+            if (!checker.apply(e)) {
+                return;
+            }
+            observableExceptionCount++;
+            if (involveCount > 0) {
+                double currentFrequency = (double) observableExceptionCount / involveCount;
+                if (currentFrequency >= threshold) {
+                    callback.run();
+                }
+            }
+        } finally {
+            lock.unlock();
         }
     }
 
