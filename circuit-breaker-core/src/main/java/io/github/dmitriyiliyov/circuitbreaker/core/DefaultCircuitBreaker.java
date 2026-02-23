@@ -1,6 +1,5 @@
 package io.github.dmitriyiliyov.circuitbreaker.core;
 
-import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -8,45 +7,53 @@ import java.util.function.Supplier;
 
 public class DefaultCircuitBreaker implements CircuitBreaker {
 
-    private final Set<Class<?>> observableExceptions;
-    private CircuitState state;
+    private final Set<Class<? extends Throwable>> observableExceptions;
+    private volatile CircuitState state;
     private final Lock lock = new ReentrantLock();
 
-    public DefaultCircuitBreaker(Set<Class<?>> observableExceptions) {
-        this.observableExceptions = Collections.synchronizedSet(observableExceptions);
+    public DefaultCircuitBreaker(Set<Class<? extends Throwable>> observableExceptions) {
+        this.observableExceptions = Set.copyOf(observableExceptions);
     }
 
-    public DefaultCircuitBreaker(Set<Class<?>> observableExceptions, CircuitState state) {
-        this.observableExceptions = Collections.synchronizedSet(observableExceptions);
+    public DefaultCircuitBreaker(Set<Class<? extends Throwable>> observableExceptions, CircuitState state) {
+        this.observableExceptions = Set.copyOf(observableExceptions);
         this.state = state;
     }
 
     @Override
-    public void process(Runnable process) {
-        state.process(process);
+    public void execute(Runnable process) {
+        state.execute(process);
     }
 
     @Override
-    public <T> T process(Supplier<T> process) {
-        return state.process(process);
+    public <T> T execute(Supplier<T> process) {
+        return state.execute(process);
     }
 
     @Override
-    public Set<Class<?>> getObservableExceptions() {
+    public Set<Class<? extends Throwable>> getObservableExceptions() {
         return observableExceptions;
     }
 
     @Override
-    public void setState(CircuitState state) {
+    public boolean trySetState(CircuitState previousState, CircuitState nextState) {
         lock.lock();
         try {
-            state.reset();
-            this.state = state;
+            if (state.equals(previousState)) {
+                this.state = nextState;
+                return true;
+            }
+            return false;
         } finally {
             lock.unlock();
         }
     }
 
+    public void setState(CircuitState state) {
+        this.state = state;
+    }
+
+    @Override
     public CircuitState getState() {
         return state;
     }

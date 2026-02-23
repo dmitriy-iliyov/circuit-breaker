@@ -1,14 +1,10 @@
 package io.github.dmitriyiliyov.circuitbreaker.core;
 
 import java.util.Set;
-import java.util.function.Supplier;
 
-public interface CircuitBreaker {
-    void process(Runnable process);
+public interface CircuitBreaker extends CircuitState {
+    Set<Class<? extends Throwable>> getObservableExceptions();
+    boolean trySetState(CircuitState previousState, CircuitState nestState);
 
-    <T> T process(Supplier<T> process);
-
-    Set<Class<?>> getObservableExceptions();
-
-    void setState(CircuitState state);
+    CircuitState getState();
 }
