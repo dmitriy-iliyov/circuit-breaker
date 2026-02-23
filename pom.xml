@@ -139,7 +139,7 @@
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
-                <version>0.8.12</version>
+                <version>0.8.14</version>
                 <executions>
                     <execution>
                         <goals>
@@ -154,14 +154,14 @@
                         </goals>
                     </execution>
                 </executions>
-                <configuration>
-                    <includes>
-                        <include>io/github/dmitriyiliyov/circuitbreaker/**</include>
-                    </includes>
-                    <excludes>
-                        <exclude>io/github/dmitriyiliyov/circuitbreaker/load_tests/**</exclude>
-                    </excludes>
-                </configuration>
+<!--                <configuration>-->
+<!--                    <includes>-->
+<!--                        <include>io/github/dmitriyiliyov/circuitbreaker/**</include>-->
+<!--                    </includes>-->
+<!--                    <excludes>-->
+<!--                        <exclude>io/github/dmitriyiliyov/circuitbreaker/load_tests/**</exclude>-->
+<!--                    </excludes>-->
+<!--                </configuration>-->
             </plugin>
 
         </plugins>
