@@ -22,9 +22,6 @@ replay_pid*
 idea/
 target/
 *.DS_Store
-*.iml
-mvnw
-mvnw.cmd
 
 *.env
 *.docker-env
