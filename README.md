@@ -6,4 +6,5 @@
 [![GitHub Release Date](https://img.shields.io/github/release-date/dmitriy-iliyov/circuit-breaker)](https://github.com/dmitriy-iliyov/circuit-breaker/releases/latest)
 ![GitHub last commit](https://img.shields.io/github/last-commit/dmitriy-iliyov/circuit-breaker)
 
+
 While **not a drop-in replacement** for Resilience4J, the library can be used in production for small to medium-scale systems where simplicity and transparency are preferred.
