@@ -158,6 +158,9 @@
                     <includes>
                         <include>io/github/dmitriyiliyov/circuitbreaker/**</include>
                     </includes>
+                    <excludes>
+                        <exclude>io/github/dmitriyiliyov/circuitbreaker/load_tests/**</exclude>
+                    </excludes>
                 </configuration>
             </plugin>
 
