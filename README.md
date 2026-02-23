@@ -1,5 +1,5 @@
 [![CodeFactor](https://www.codefactor.io/repository/github/dmitriy-iliyov/circuit-breaker/badge)](https://www.codefactor.io/repository/github/dmitriy-iliyov/circuit-breaker)
-[![codecov](https://codecov.io/github/dmitriy-iliyov/circuit-breaker/branch/main/graph/badge.svg?token=8X6B9K3AOK)](https://codecov.io/github/dmitriy-iliyov/circuit-breaker)
+[![codecov](https://codecov.io/github/dmitriy-iliyov/circuit-breaker/graph/badge.svg?token=8HOK2CVJRH)](https://codecov.io/github/dmitriy-iliyov/circuit-breaker)
 [![CI](https://github.com/dmitriy-iliyov/circuit-breaker/actions/workflows/ci.yml/badge.svg)](https://github.com/dmitriy-iliyov/circuit-breaker/actions/workflows/ci.yml)
 [![Maven Central](https://img.shields.io/maven-central/v/io.github.dmitriy-iliyov/circuit-breaker-starter.svg?label=maven-central&color=blue)](https://central.sonatype.com/artifact/io.github.dmitriy-iliyov/circuit-breaker-starter)
 ![Release](https://img.shields.io/github/release/dmitriy-iliyov/circuit-breaker)
