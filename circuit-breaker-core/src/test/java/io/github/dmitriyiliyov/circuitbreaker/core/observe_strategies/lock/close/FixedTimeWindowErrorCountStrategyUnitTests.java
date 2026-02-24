@@ -79,32 +79,31 @@ public class FixedTimeWindowErrorCountStrategyUnitTests {
         assertThat(strategy.shouldTrip()).isEqualTo(false);
     }
 
-//    @Test
-//    @DisplayName("UT: when time window expired should result in shouldTrip being false")
-//    public void timeWindowExpired_shouldTripShouldBeFalse() throws InterruptedException {
-//        List<CompletableFuture<Void>> futures = new ArrayList<>();
-//        for (int i = 0; i < 2; i++) {
-//            futures.add(CompletableFuture.runAsync(() -> strategy.onException()));
-//        }
-//        for (int i = 0; i < 7; i++) {
-//            futures.add(CompletableFuture.runAsync(() -> strategy.onRequest()));
-//        }
-//        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
-//
-//        assertThat(strategy.shouldTrip()).isEqualTo(true);
-//
-//        Thread.sleep(150);
-//
-//        futures.clear();
-//        CompletableFuture.runAsync(() -> strategy.onException()).join();
-//
-//        assertThat(strategy.shouldTrip()).isEqualTo(false);
-//
-//        // additional check
-//        CompletableFuture.runAsync(() -> strategy.onException()).join();
-//
-//        assertThat(strategy.shouldTrip()).isEqualTo(true);
-//    }
+    @Test
+    @DisplayName("UT: when time window expired should result in shouldTrip being false")
+    public void timeWindowExpired_shouldTripShouldBeFalse() throws InterruptedException {
+        List<CompletableFuture<Void>> futures = new ArrayList<>();
+        for (int i = 0; i < 2; i++) {
+            futures.add(CompletableFuture.runAsync(() -> strategy.onException()));
+        }
+        for (int i = 0; i < 7; i++) {
+            futures.add(CompletableFuture.runAsync(() -> strategy.onRequest()));
+        }
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+
+        assertThat(strategy.shouldTrip()).isEqualTo(true);
+
+        Thread.sleep(150);
+
+        futures.clear();
+
+        strategy.onException();
+        assertThat(strategy.shouldTrip()).isEqualTo(false);
+
+        // additional check
+        strategy.onException();
+        assertThat(strategy.shouldTrip()).isEqualTo(true);
+    }
 
     @Test
     @DisplayName("UT: reset should clear state and shouldTrip should be false")

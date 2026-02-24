@@ -8,14 +8,14 @@ public class FixedTimeWindowErrorCountStrategy implements CloseObserveStrategy {
 
     private final long ttlMillis;
     private long observeEndMillis;
-    private final long threshold;
+    private final long exceptionCountThreshold;
     private long exceptionCount;
     private volatile boolean shouldTrip;
     private final Lock lock = new ReentrantLock();
 
-    public FixedTimeWindowErrorCountStrategy(Duration ttl, long threshold) {
+    public FixedTimeWindowErrorCountStrategy(Duration ttl, long exceptionCountThreshold) {
         this.ttlMillis = ttl.toMillis();
-        this.threshold = threshold;
+        this.exceptionCountThreshold = exceptionCountThreshold;
         this.observeEndMillis = System.currentTimeMillis() + ttlMillis;
         this.exceptionCount = 0;
         this.shouldTrip = false;
@@ -43,11 +43,11 @@ public class FixedTimeWindowErrorCountStrategy implements CloseObserveStrategy {
             long currentMillis = System.currentTimeMillis();
             if (observeEndMillis < currentMillis) {
                 observeEndMillis = currentMillis + ttlMillis;
-                exceptionCount = 1;
+                exceptionCount = 0;
                 shouldTrip = false;
             }
             exceptionCount++;
-            shouldTrip = exceptionCount >= threshold;
+            shouldTrip = exceptionCount >= exceptionCountThreshold;
         } finally {
             lock.unlock();
         }
