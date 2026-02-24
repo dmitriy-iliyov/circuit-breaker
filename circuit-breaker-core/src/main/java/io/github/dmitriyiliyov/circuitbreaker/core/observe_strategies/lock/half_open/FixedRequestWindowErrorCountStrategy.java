@@ -42,7 +42,7 @@ public class FixedRequestWindowErrorCountStrategy implements HalfOpenObserveStra
             if (exceptionsCount >= threshold) {
                 transition = HalfOpenTransition.TO_OPEN;
             }
-            if (requestCount >= windowSize) {
+            if (HalfOpenTransition.NO_TRANSITION.equals(transition) && requestCount >= windowSize) {
                 transition = HalfOpenTransition.TO_CLOSE;
             }
         } finally {
