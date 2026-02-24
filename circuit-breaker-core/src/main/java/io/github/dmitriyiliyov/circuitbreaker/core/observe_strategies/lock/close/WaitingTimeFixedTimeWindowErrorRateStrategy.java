@@ -4,20 +4,27 @@ import java.time.Duration;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class FixedTimeWindowErrorRateStrategy implements CloseObserveStrategy {
+/**
+ * A {@link CloseObserveStrategy} that trips the circuit breaker when the error rate
+ * exceeds a threshold within a fixed time window, but only after a certain
+ * observation start time has passed.
+ */
+public class WaitingTimeFixedTimeWindowErrorRateStrategy implements CloseObserveStrategy {
 
-    private final long ttlMillis;
+    private final long observeTimeMillis;
     private final double threshold;
+    private final long observeStartMillis;
     private long observeEndMillis;
     private int requestCount;
     private int exceptionCount;
     private volatile boolean shouldTrip;
     private final Lock lock = new ReentrantLock();
 
-    public FixedTimeWindowErrorRateStrategy(Duration ttl, double threshold) {
-        this.ttlMillis = ttl.toMillis();
+    public WaitingTimeFixedTimeWindowErrorRateStrategy(Duration observeTime, double threshold, Duration observeStartTime) {
+        this.observeTimeMillis = observeTime.toMillis();
         this.threshold = threshold;
-        this.observeEndMillis = System.currentTimeMillis() + ttlMillis;
+        this.observeStartMillis = System.currentTimeMillis() + observeStartTime.toMillis();
+        this.observeEndMillis = System.currentTimeMillis() + observeTimeMillis;
         this.requestCount = 0;
         this.exceptionCount = 0;
         this.shouldTrip = false;
@@ -30,7 +37,7 @@ public class FixedTimeWindowErrorRateStrategy implements CloseObserveStrategy {
             requestCount++;
             long currentMillis = System.currentTimeMillis();
             if (currentMillis > observeEndMillis) {
-                observeEndMillis = currentMillis + ttlMillis;
+                observeEndMillis = currentMillis + observeTimeMillis;
                 requestCount = 1;
                 exceptionCount = 0;
                 shouldTrip = false;
@@ -47,13 +54,15 @@ public class FixedTimeWindowErrorRateStrategy implements CloseObserveStrategy {
             requestCount++;
             long currentMillis = System.currentTimeMillis();
             if (currentMillis > observeEndMillis) {
-                observeEndMillis = currentMillis + ttlMillis;
+                observeEndMillis = currentMillis + observeTimeMillis;
                 requestCount = 1;
-                exceptionCount = 1;
+                exceptionCount = 0;
                 shouldTrip = false;
             }
             exceptionCount++;
-            shouldTrip = (double) exceptionCount / requestCount >= threshold;
+            if (currentMillis >= observeStartMillis) {
+                shouldTrip = (double) exceptionCount / requestCount >= threshold;
+            }
         } finally {
             lock.unlock();
         }
@@ -68,7 +77,7 @@ public class FixedTimeWindowErrorRateStrategy implements CloseObserveStrategy {
     public void reset() {
         lock.lock();
         try {
-            observeEndMillis = System.currentTimeMillis() + ttlMillis;
+            observeEndMillis = System.currentTimeMillis() + observeTimeMillis;
             requestCount = 0;
             exceptionCount = 0;
             shouldTrip = false;
