@@ -10,7 +10,6 @@ public class SimpleMovingWindowStrategy implements CloseObserveStrategy {
     private int [] window;
     private int index;
     private int windowSum;
-    private int currentWindowSize;
     private volatile boolean shouldTrip;
     private final Lock lock = new ReentrantLock();
 
@@ -20,7 +19,6 @@ public class SimpleMovingWindowStrategy implements CloseObserveStrategy {
         this.window = new int[windowSize];
         this.index = 0;
         this.windowSum = 0;
-        this.currentWindowSize = 0;
         this.shouldTrip = false;
     }
 
@@ -42,16 +40,11 @@ public class SimpleMovingWindowStrategy implements CloseObserveStrategy {
     private void updateWindow(int value) {
         lock.lock();
         try {
-            if (currentWindowSize < windowSize) {
-                currentWindowSize++;
-            }
-            if (currentWindowSize == windowSize) {
-                windowSum -= window[index];
-                windowSum += value;
-                window[index] = value;
-                index = (index + 1) % windowSize;
-                shouldTrip = (double) windowSum / windowSize >= threshold;
-            }
+            windowSum -= window[index];
+            windowSum += value;
+            window[index] = value;
+            index = (index + 1) % windowSize;
+            shouldTrip = (double) windowSum / windowSize >= threshold;
         } finally {
             lock.unlock();
         }
@@ -64,7 +57,6 @@ public class SimpleMovingWindowStrategy implements CloseObserveStrategy {
             window = new int[windowSize];
             index = 0;
             windowSum = 0;
-            currentWindowSize = 0;
             shouldTrip = false;
         } finally {
             lock.unlock();
