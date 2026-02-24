@@ -1,38 +1,36 @@
 package io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.lock.close;
 
 import java.time.Duration;
-import java.time.Instant;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class FixedTimeWindowErrorRateStrategy implements CloseObserveStrategy {
 
-    private final Duration ttl;
+    private final long ttlMillis;
     private final double threshold;
-    private Instant observeEnd;
+    private long observeEndMillis;
     private int requestCount;
     private int exceptionCount;
     private volatile boolean shouldTrip;
     private final Lock lock = new ReentrantLock();
 
     public FixedTimeWindowErrorRateStrategy(Duration ttl, double threshold) {
-        this.ttl = ttl;
+        this.ttlMillis = ttl.toMillis();
         this.threshold = threshold;
-        this.observeEnd = Instant.now().plus(ttl);
+        this.observeEndMillis = System.currentTimeMillis() + ttlMillis;
         this.requestCount = 0;
         this.exceptionCount = 0;
         this.shouldTrip = false;
-        throw new IllegalStateException("Shouldn't use Instant, should use System.milis ???");
     }
 
     @Override
     public void onRequest() {
         lock.lock();
         try {
-            Instant now = Instant.now();
             requestCount++;
-            if (now.isAfter(observeEnd)) {
-                observeEnd = Instant.now().plus(ttl);
+            long currentMillis = System.currentTimeMillis();
+            if (currentMillis > observeEndMillis) {
+                observeEndMillis = currentMillis + ttlMillis;
                 requestCount = 1;
                 exceptionCount = 0;
                 shouldTrip = false;
@@ -46,19 +44,16 @@ public class FixedTimeWindowErrorRateStrategy implements CloseObserveStrategy {
     public void onException() {
         lock.lock();
         try {
-            Instant now = Instant.now();
             requestCount++;
-            if (now.isAfter(observeEnd)) {
-                observeEnd = Instant.now().plus(ttl);
+            long currentMillis = System.currentTimeMillis();
+            if (currentMillis > observeEndMillis) {
+                observeEndMillis = currentMillis + ttlMillis;
                 requestCount = 1;
-                exceptionCount = 0;
+                exceptionCount = 1;
                 shouldTrip = false;
             }
             exceptionCount++;
-            double frequency = (double) exceptionCount / requestCount;
-            if (frequency >= threshold) {
-                shouldTrip = true;
-            }
+            shouldTrip = (double) exceptionCount / requestCount >= threshold;
         } finally {
             lock.unlock();
         }
@@ -73,7 +68,7 @@ public class FixedTimeWindowErrorRateStrategy implements CloseObserveStrategy {
     public void reset() {
         lock.lock();
         try {
-            observeEnd = Instant.now().plus(ttl);
+            observeEndMillis = System.currentTimeMillis() + ttlMillis;
             requestCount = 0;
             exceptionCount = 0;
             shouldTrip = false;

@@ -1,29 +1,29 @@
 package io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.lock.open;
 
 import java.time.Duration;
-import java.time.Instant;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class FailFastFixedTimeWindowStrategy implements OpenObserveStrategy {
 
-    private final Duration ttl;
-    private Instant observeEnd;
+    private final long ttlMillis;
+    private long observeEndMillis;
     private boolean shouldTrip;
     private final Lock lock = new ReentrantLock();
 
     public FailFastFixedTimeWindowStrategy(Duration ttl) {
-        this.ttl = ttl;
+        this.ttlMillis = ttl.toMillis();
         this.shouldTrip = false;
-        this.observeEnd = Instant.now().plus(ttl);
+        this.observeEndMillis = System.currentTimeMillis() + ttlMillis;
     }
 
     @Override
     public void onRequest() {
         lock.lock();
         try {
-            Instant now = Instant.now();
-            if (now.isAfter(observeEnd)) {
+            long currentMillis = System.currentTimeMillis();
+            if (currentMillis > observeEndMillis) {
+                observeEndMillis = currentMillis + ttlMillis;
                 shouldTrip = true;
             }
         } finally {
@@ -41,7 +41,7 @@ public class FailFastFixedTimeWindowStrategy implements OpenObserveStrategy {
         lock.lock();
         try {
             shouldTrip = false;
-            observeEnd = Instant.now().plus(ttl);
+            observeEndMillis = System.currentTimeMillis() + ttlMillis;
         } finally {
             lock.unlock();
         }
