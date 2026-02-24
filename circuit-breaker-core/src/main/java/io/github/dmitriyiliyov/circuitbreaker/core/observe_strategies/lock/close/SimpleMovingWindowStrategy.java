@@ -3,6 +3,10 @@ package io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.lock.clos
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+/**
+ * A {@link CloseObserveStrategy} that uses a sliding window to calculate the error rate.
+ * The window is based on the last N requests.
+ */
 public class SimpleMovingWindowStrategy implements CloseObserveStrategy {
 
     private final int windowSize;

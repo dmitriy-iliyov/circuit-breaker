@@ -3,6 +3,9 @@ package io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.lock.open
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+/**
+ * An {@link OpenObserveStrategy} that transitions to HALF_OPEN after a fixed number of requests.
+ */
 public class FailFastFixedRequestWindowStrategy implements OpenObserveStrategy {
 
     private final int windowSize;

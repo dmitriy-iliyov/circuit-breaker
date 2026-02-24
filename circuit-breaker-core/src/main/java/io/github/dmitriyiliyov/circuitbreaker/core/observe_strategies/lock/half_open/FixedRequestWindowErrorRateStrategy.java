@@ -3,6 +3,13 @@ package io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.lock.half
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+/**
+ * A {@link HalfOpenObserveStrategy} that uses a fixed request window to determine
+ * the transition from HALF_OPEN.
+ * <p>
+ * If the error rate within the window exceeds a threshold, it transitions to OPEN.
+ * If the window completes without exceeding the threshold, it transitions to CLOSED.
+ */
 public class FixedRequestWindowErrorRateStrategy implements HalfOpenObserveStrategy {
 
     private final int windowSize;

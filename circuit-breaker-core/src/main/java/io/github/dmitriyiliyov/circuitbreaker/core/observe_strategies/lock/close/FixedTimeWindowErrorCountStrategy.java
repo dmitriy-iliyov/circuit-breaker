@@ -4,6 +4,10 @@ import java.time.Duration;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+/**
+ * A {@link CloseObserveStrategy} that trips the circuit breaker when the number of exceptions
+ * exceeds a threshold within a fixed time window.
+ */
 public class FixedTimeWindowErrorCountStrategy implements CloseObserveStrategy {
 
     private final long ttlMillis;

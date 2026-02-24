@@ -4,6 +4,9 @@ import java.time.Duration;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+/**
+ * An {@link OpenObserveStrategy} that transitions to HALF_OPEN after a fixed time window.
+ */
 public class FailFastFixedTimeWindowStrategy implements OpenObserveStrategy {
 
     private final long ttlMillis;

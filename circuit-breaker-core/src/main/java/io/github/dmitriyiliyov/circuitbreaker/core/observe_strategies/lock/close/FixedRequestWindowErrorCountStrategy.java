@@ -3,6 +3,10 @@ package io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.lock.clos
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+/**
+ * A {@link CloseObserveStrategy} that trips the circuit breaker when the number of exceptions
+ * exceeds a threshold within a fixed number of requests.
+ */
 public class FixedRequestWindowErrorCountStrategy implements CloseObserveStrategy {
 
     private final int windowSize;
