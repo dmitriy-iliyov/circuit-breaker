@@ -90,7 +90,6 @@ public class WaitingTimeFixedTimeWindowErrorRateStrategyUnitTests {
         Thread.sleep(WINDOW_TIME.toMillis() + 50);
 
         strategy.onRequest();
-
         assertThat(strategy.shouldTrip()).isFalse();
     }
 
