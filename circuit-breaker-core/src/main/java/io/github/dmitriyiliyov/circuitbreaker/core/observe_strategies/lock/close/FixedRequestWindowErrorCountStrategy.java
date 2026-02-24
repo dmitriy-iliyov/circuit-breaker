@@ -46,9 +46,7 @@ public class FixedRequestWindowErrorCountStrategy implements CloseObserveStrateg
                 shouldTrip = false;
             }
             exceptionsCount++;
-            if (exceptionsCount >= threshold) {
-                shouldTrip = true;
-            }
+            shouldTrip = exceptionsCount >= threshold;
         } finally {
             lock.unlock();
         }
