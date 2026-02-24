@@ -8,7 +8,7 @@ public class FixedRequestWindowErrorCountStrategy implements HalfOpenObserveStra
     private final int windowSize;
     private final long threshold;
     private int requestCount;
-    private int exceptionsCount;
+    private int exceptionCount;
     private volatile HalfOpenTransition transition;
     private final Lock lock = new ReentrantLock();
 
@@ -16,7 +16,7 @@ public class FixedRequestWindowErrorCountStrategy implements HalfOpenObserveStra
         this.windowSize = windowSize;
         this.threshold = threshold;
         this.requestCount = 0;
-        this.exceptionsCount = 0;
+        this.exceptionCount = 0;
         this.transition = HalfOpenTransition.NO_TRANSITION;
     }
 
@@ -38,8 +38,8 @@ public class FixedRequestWindowErrorCountStrategy implements HalfOpenObserveStra
         lock.lock();
         try {
             requestCount++;
-            exceptionsCount++;
-            if (exceptionsCount >= threshold) {
+            exceptionCount++;
+            if (exceptionCount >= threshold) {
                 transition = HalfOpenTransition.TO_OPEN;
             }
             if (HalfOpenTransition.NO_TRANSITION.equals(transition) && requestCount >= windowSize) {
@@ -61,7 +61,7 @@ public class FixedRequestWindowErrorCountStrategy implements HalfOpenObserveStra
         lock.lock();
         try {
             requestCount = 0;
-            exceptionsCount = 0;
+            exceptionCount = 0;
             transition = HalfOpenTransition.NO_TRANSITION;
         } finally {
             lock.unlock();

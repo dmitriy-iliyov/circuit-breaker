@@ -9,7 +9,7 @@ public class FixedTimeWindowErrorCountStrategy implements CloseObserveStrategy {
     private final long ttlMillis;
     private long observeEndMillis;
     private final long threshold;
-    private long exceptionsCount;
+    private long exceptionCount;
     private volatile boolean shouldTrip;
     private final Lock lock = new ReentrantLock();
 
@@ -17,7 +17,7 @@ public class FixedTimeWindowErrorCountStrategy implements CloseObserveStrategy {
         this.ttlMillis = ttl.toMillis();
         this.threshold = threshold;
         this.observeEndMillis = System.currentTimeMillis() + ttlMillis;
-        this.exceptionsCount = 0;
+        this.exceptionCount = 0;
         this.shouldTrip = false;
     }
 
@@ -28,7 +28,7 @@ public class FixedTimeWindowErrorCountStrategy implements CloseObserveStrategy {
             long currentMillis = System.currentTimeMillis();
             if (observeEndMillis < currentMillis) {
                 observeEndMillis = currentMillis + ttlMillis;
-                exceptionsCount = 0;
+                exceptionCount = 0;
                 shouldTrip = false;
             }
         } finally {
@@ -43,11 +43,11 @@ public class FixedTimeWindowErrorCountStrategy implements CloseObserveStrategy {
             long currentMillis = System.currentTimeMillis();
             if (observeEndMillis < currentMillis) {
                 observeEndMillis = currentMillis + ttlMillis;
-                exceptionsCount = 1;
+                exceptionCount = 1;
                 shouldTrip = false;
             }
-            exceptionsCount++;
-            shouldTrip = exceptionsCount >= threshold;
+            exceptionCount++;
+            shouldTrip = exceptionCount >= threshold;
         } finally {
             lock.unlock();
         }
@@ -63,7 +63,7 @@ public class FixedTimeWindowErrorCountStrategy implements CloseObserveStrategy {
         lock.lock();
         try {
             observeEndMillis = System.currentTimeMillis() + ttlMillis;
-            exceptionsCount = 0;
+            exceptionCount = 0;
             shouldTrip = false;
         } finally {
             lock.unlock();

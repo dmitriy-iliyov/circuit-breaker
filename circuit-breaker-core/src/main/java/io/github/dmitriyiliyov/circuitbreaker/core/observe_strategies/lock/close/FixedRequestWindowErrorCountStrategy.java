@@ -8,7 +8,7 @@ public class FixedRequestWindowErrorCountStrategy implements CloseObserveStrateg
     private final int windowSize;
     private final long threshold;
     private int requestCount;
-    private int exceptionsCount;
+    private int exceptionCount;
     private volatile boolean shouldTrip;
     private final Lock lock = new ReentrantLock();
 
@@ -16,7 +16,7 @@ public class FixedRequestWindowErrorCountStrategy implements CloseObserveStrateg
         this.windowSize = windowSize;
         this.threshold = threshold;
         this.requestCount = 0;
-        this.exceptionsCount = 0;
+        this.exceptionCount = 0;
         this.shouldTrip = false;
     }
 
@@ -27,7 +27,7 @@ public class FixedRequestWindowErrorCountStrategy implements CloseObserveStrateg
             requestCount++;
             if (requestCount > windowSize) {
                 requestCount = 1;
-                exceptionsCount = 0;
+                exceptionCount = 0;
                 shouldTrip = false;
             }
         } finally {
@@ -42,11 +42,11 @@ public class FixedRequestWindowErrorCountStrategy implements CloseObserveStrateg
             requestCount++;
             if (requestCount > windowSize) {
                 requestCount = 1;
-                exceptionsCount = 0;
+                exceptionCount = 0;
                 shouldTrip = false;
             }
-            exceptionsCount++;
-            shouldTrip = exceptionsCount >= threshold;
+            exceptionCount++;
+            shouldTrip = exceptionCount >= threshold;
         } finally {
             lock.unlock();
         }
@@ -62,7 +62,7 @@ public class FixedRequestWindowErrorCountStrategy implements CloseObserveStrateg
         lock.lock();
         try {
             requestCount = 0;
-            exceptionsCount = 0;
+            exceptionCount = 0;
             shouldTrip = false;
         } finally {
             lock.unlock();
