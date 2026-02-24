@@ -6,7 +6,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public class FixedRequestWindowErrorRateStrategy implements CloseObserveStrategy {
 
     private final int windowSize;
-    private final double threshold;
+    private final int exceptionCountThreshold;
     private int requestCount;
     private int exceptionCount;
     private volatile boolean shouldTrip;
@@ -14,7 +14,7 @@ public class FixedRequestWindowErrorRateStrategy implements CloseObserveStrategy
 
     public FixedRequestWindowErrorRateStrategy(int windowSize, double threshold) {
         this.windowSize = windowSize;
-        this.threshold = threshold;
+        this.exceptionCountThreshold = (int) (threshold * windowSize);
         this.requestCount = 0;
         this.exceptionCount = 0;
         this.shouldTrip = false;
@@ -46,7 +46,7 @@ public class FixedRequestWindowErrorRateStrategy implements CloseObserveStrategy
                 shouldTrip = false;
             }
             exceptionCount++;
-            shouldTrip = (double) exceptionCount / windowSize >= threshold;
+            shouldTrip = exceptionCount >= exceptionCountThreshold;
         } finally {
             lock.unlock();
         }

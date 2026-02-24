@@ -70,6 +70,26 @@ public class FixedRequestWindowErrorRateStrategyUnitTests {
     }
 
     @Test
+    @DisplayName("UT: transition to OPEN should not be overwritten by subsequent successful requests")
+    public void transitionToOpen_shouldNotBeOverwrittenBySubsequentRequests() {
+        List<CompletableFuture<Void>> futures = new ArrayList<>();
+        for (int i = 0; i < 2; i++) {
+            futures.add(CompletableFuture.runAsync(() -> strategy.onException()));
+        }
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+
+        assertThat(strategy.getTransition()).isEqualTo(HalfOpenTransition.TO_OPEN);
+
+        futures.clear();
+        for (int i = 0; i < 8; i++) {
+            futures.add(CompletableFuture.runAsync(() -> strategy.onRequest()));
+        }
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+
+        assertThat(strategy.getTransition()).isEqualTo(HalfOpenTransition.TO_OPEN);
+    }
+
+    @Test
     @DisplayName("UT: reset should clear state and transition should be NO_TRANSITION")
     public void reset_shouldClearStateAndTransitionShouldBeNoTransition() {
         List<CompletableFuture<Void>> futures = new ArrayList<>();

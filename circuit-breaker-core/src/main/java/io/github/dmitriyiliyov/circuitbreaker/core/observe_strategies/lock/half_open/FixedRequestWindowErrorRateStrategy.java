@@ -6,7 +6,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public class FixedRequestWindowErrorRateStrategy implements HalfOpenObserveStrategy {
 
     private final int windowSize;
-    private final double threshold;
+    private final int exceptionCountThreshold;
     private int requestCount;
     private int exceptionCount;
     private volatile HalfOpenTransition transition;
@@ -14,7 +14,7 @@ public class FixedRequestWindowErrorRateStrategy implements HalfOpenObserveStrat
 
     public FixedRequestWindowErrorRateStrategy(int windowSize, double threshold) {
         this.windowSize = windowSize;
-        this.threshold = threshold;
+        this.exceptionCountThreshold = (int) (windowSize * threshold);
         this.requestCount = 0;
         this.exceptionCount = 0;
         this.transition = HalfOpenTransition.NO_TRANSITION;
@@ -39,8 +39,7 @@ public class FixedRequestWindowErrorRateStrategy implements HalfOpenObserveStrat
         try {
             requestCount++;
             exceptionCount++;
-            double currentFrequency = (double) exceptionCount / windowSize;
-            if (currentFrequency >= threshold) {
+            if (exceptionCount >= exceptionCountThreshold) {
                 transition = HalfOpenTransition.TO_OPEN;
             }
             if (HalfOpenTransition.NO_TRANSITION.equals(transition) && requestCount >= windowSize) {
