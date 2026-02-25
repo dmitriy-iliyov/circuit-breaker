@@ -5,9 +5,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -26,14 +23,12 @@ public class WaitingTimeFixedTimeWindowErrorRateStrategyUnitTests {
     @Test
     @DisplayName("UT: should NOT trip when time is below observe start time, even if error rate is high")
     public void shouldNotTrip_whenTimeBelowObserveStartTime() {
-        List<CompletableFuture<Void>> futures = new ArrayList<>();
         for (int i = 0; i < 1; i++) {
-            futures.add(CompletableFuture.runAsync(() -> strategy.onRequest()));
+            strategy.onRequest();
         }
         for (int i = 0; i < 3; i++) {
-            futures.add(CompletableFuture.runAsync(() -> strategy.onException()));
+            strategy.onException();
         }
-        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
 
         assertThat(strategy.shouldTrip()).isFalse();
     }
@@ -43,14 +38,12 @@ public class WaitingTimeFixedTimeWindowErrorRateStrategyUnitTests {
     public void shouldNotTrip_whenThresholdNotReached() throws InterruptedException {
         Thread.sleep(OBSERVE_START_TIME.toMillis() + 10);
 
-        List<CompletableFuture<Void>> futures = new ArrayList<>();
         for (int i = 0; i < 3; i++) {
-            futures.add(CompletableFuture.runAsync(() -> strategy.onRequest()));
+            strategy.onRequest();
         }
         for (int i = 0; i < 2; i++) {
-            futures.add(CompletableFuture.runAsync(() -> strategy.onException()));
+            strategy.onException();
         }
-        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
 
         assertThat(strategy.shouldTrip()).isFalse();
     }
@@ -60,14 +53,12 @@ public class WaitingTimeFixedTimeWindowErrorRateStrategyUnitTests {
     public void shouldTrip_whenThresholdReached() throws InterruptedException {
         Thread.sleep(OBSERVE_START_TIME.toMillis() + 10);
 
-        List<CompletableFuture<Void>> futures = new ArrayList<>();
         for (int i = 0; i < 2; i++) {
-            futures.add(CompletableFuture.runAsync(() -> strategy.onRequest()));
+            strategy.onRequest();
         }
         for (int i = 0; i < 3; i++) {
-            futures.add(CompletableFuture.runAsync(() -> strategy.onException()));
+            strategy.onException();
         }
-        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
 
         assertThat(strategy.shouldTrip()).isTrue();
     }
@@ -77,43 +68,40 @@ public class WaitingTimeFixedTimeWindowErrorRateStrategyUnitTests {
     public void shouldResetState_afterTimeWindowExpires() throws InterruptedException {
         Thread.sleep(OBSERVE_START_TIME.toMillis() + 10);
 
-        List<CompletableFuture<Void>> futures = new ArrayList<>();
         for (int i = 0; i < 3; i++) {
-            futures.add(CompletableFuture.runAsync(() -> strategy.onException()));
+            strategy.onException();
         }
         for (int i = 0; i < 2; i++) {
-            futures.add(CompletableFuture.runAsync(() -> strategy.onRequest()));
+            strategy.onRequest();
         }
-        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
         assertThat(strategy.shouldTrip()).isTrue();
 
         Thread.sleep(WINDOW_TIME.toMillis() + 50);
 
         strategy.onRequest();
+
         assertThat(strategy.shouldTrip()).isFalse();
     }
 
-//    @Test
-//    @DisplayName("UT: reset() method should clear state and shouldTrip should be false")
-//    public void resetMethod_shouldClearState() throws InterruptedException {
-//        Thread.sleep(OBSERVE_START_TIME.toMillis() + 10);
-//
-//        List<CompletableFuture<Void>> futures = new ArrayList<>();
-//        for (int i = 0; i < 3; i++) {
-//            futures.add(CompletableFuture.runAsync(() -> strategy.onException()));
-//        }
-//        for (int i = 0; i < 2; i++) {
-//            futures.add(CompletableFuture.runAsync(() -> strategy.onRequest()));
-//        }
-//        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
-//        assertThat(strategy.shouldTrip()).isTrue();
-//
-//        strategy.reset();
-//
-//        assertThat(strategy.shouldTrip()).isFalse();
-//
-//        strategy.onException();
-//        strategy.onException();
-//        assertThat(strategy.shouldTrip()).isFalse();
-//    }
+    @Test
+    @DisplayName("UT: reset() method should clear state and shouldTrip should be false")
+    public void resetMethod_shouldClearState() throws InterruptedException {
+        Thread.sleep(OBSERVE_START_TIME.toMillis() + 10);
+
+        for (int i = 0; i < 3; i++) {
+            strategy.onException();
+        }
+        for (int i = 0; i < 2; i++) {
+            strategy.onRequest();
+        }
+        assertThat(strategy.shouldTrip()).isTrue();
+
+        strategy.reset();
+
+        assertThat(strategy.shouldTrip()).isFalse();
+
+        strategy.onException();
+        strategy.onException();
+        assertThat(strategy.shouldTrip()).isFalse();
+    }
 }

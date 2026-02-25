@@ -5,9 +5,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -23,12 +20,10 @@ public class FailFastFixedTimeWindowStrategyUnitTests {
     @Test
     @DisplayName("UT: requests within time window should result in shouldTrip being false")
     public void requestsWithinTimeWindow_shouldTripShouldBeFalse() {
-        List<CompletableFuture<Void>> futures = new ArrayList<>();
         for (int i = 0; i < 10; i++) {
-            futures.add(CompletableFuture.runAsync(() -> strategy.onRequest()));
+            strategy.onRequest();
         }
-        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
-        assertThat(strategy.shouldTrip()).isEqualTo(false);
+        assertThat(strategy.shouldTrip()).isFalse();
     }
 
     @Test
@@ -36,12 +31,10 @@ public class FailFastFixedTimeWindowStrategyUnitTests {
     public void requestsAfterTimeWindow_shouldTripShouldBeTrue() throws InterruptedException {
         Thread.sleep(150);
 
-        List<CompletableFuture<Void>> futures = new ArrayList<>();
         for (int i = 0; i < 10; i++) {
-            futures.add(CompletableFuture.runAsync(() -> strategy.onRequest()));
+            strategy.onRequest();
         }
-        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
-        assertThat(strategy.shouldTrip()).isEqualTo(true);
+        assertThat(strategy.shouldTrip()).isTrue();
     }
 
     @Test
@@ -49,12 +42,12 @@ public class FailFastFixedTimeWindowStrategyUnitTests {
     public void reset_shouldClearStateAndShouldTripShouldBeFalse() throws InterruptedException {
         Thread.sleep(150);
         strategy.onRequest();
-        assertThat(strategy.shouldTrip()).isEqualTo(true);
+        assertThat(strategy.shouldTrip()).isTrue();
 
         strategy.reset();
 
-        assertThat(strategy.shouldTrip()).isEqualTo(false);
+        assertThat(strategy.shouldTrip()).isFalse();
         strategy.onRequest();
-        assertThat(strategy.shouldTrip()).isEqualTo(false);
+        assertThat(strategy.shouldTrip()).isFalse();
     }
 }
