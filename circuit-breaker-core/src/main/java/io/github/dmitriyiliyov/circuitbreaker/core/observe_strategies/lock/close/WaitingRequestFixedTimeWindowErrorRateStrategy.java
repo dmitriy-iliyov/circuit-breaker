@@ -1,6 +1,7 @@
 package io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.lock.close;
 
 import java.time.Duration;
+import java.util.Objects;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -12,7 +13,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public class WaitingRequestFixedTimeWindowErrorRateStrategy implements CloseObserveStrategy {
 
     private final long observeTimeMillis;
-    private final double threshold;
+    private final double exceptionRateThreshold;
     private final int observeStartRequestCount;
     private long observeEndMillis;
     private int requestCount;
@@ -20,9 +21,16 @@ public class WaitingRequestFixedTimeWindowErrorRateStrategy implements CloseObse
     private volatile boolean shouldTrip;
     private final Lock lock = new ReentrantLock();
 
-    public WaitingRequestFixedTimeWindowErrorRateStrategy(Duration observeTime, double threshold, int observeStartRequestCount) {
+    public WaitingRequestFixedTimeWindowErrorRateStrategy(Duration observeTime, double exceptionRateThreshold, int observeStartRequestCount) {
+        Objects.requireNonNull(observeTime, "cannot be null");
         this.observeTimeMillis = observeTime.toMillis();
-        this.threshold = threshold;
+        if (exceptionRateThreshold < 0) {
+            throw new IllegalArgumentException("exceptionRateThreshold cannot be negative");
+        }
+        this.exceptionRateThreshold = exceptionRateThreshold;
+        if (observeStartRequestCount < 0) {
+            throw new IllegalArgumentException("observeStartRequestCount cannot be negative");
+        }
         this.observeStartRequestCount = observeStartRequestCount;
         this.observeEndMillis = System.currentTimeMillis() + observeTimeMillis;
         this.requestCount = 0;
@@ -61,7 +69,7 @@ public class WaitingRequestFixedTimeWindowErrorRateStrategy implements CloseObse
             }
             exceptionCount++;
             if (requestCount >= observeStartRequestCount) {
-                shouldTrip = (double) exceptionCount / requestCount >= threshold;
+                shouldTrip = (double) exceptionCount / requestCount >= exceptionRateThreshold;
             }
         } finally {
             lock.unlock();

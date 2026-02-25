@@ -14,6 +14,9 @@ public class FailFastFixedRequestWindowStrategy implements OpenObserveStrategy {
     private final Lock lock = new ReentrantLock();
 
     public FailFastFixedRequestWindowStrategy(int windowSize) {
+        if (windowSize < 0) {
+            throw new IllegalArgumentException("windowSize cannot be negative");
+        }
         this.windowSize = windowSize;
         this.shouldTrip = false;
     }

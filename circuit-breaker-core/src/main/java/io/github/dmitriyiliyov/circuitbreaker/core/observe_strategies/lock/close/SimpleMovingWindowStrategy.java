@@ -10,16 +10,22 @@ import java.util.concurrent.locks.ReentrantLock;
 public class SimpleMovingWindowStrategy implements CloseObserveStrategy {
 
     private final int windowSize;
-    private final double threshold;
+    private final int exceptionCountThreshold;
     private int [] window;
     private int index;
     private int windowSum;
     private volatile boolean shouldTrip;
     private final Lock lock = new ReentrantLock();
 
-    public SimpleMovingWindowStrategy(int windowSize, double threshold) {
+    public SimpleMovingWindowStrategy(int windowSize, double exceptionRateThreshold) {
+        if (windowSize < 0) {
+            throw new IllegalArgumentException("windowSize cannot be negative");
+        }
         this.windowSize = windowSize;
-        this.threshold = threshold;
+        if (exceptionRateThreshold < 0) {
+            throw new IllegalArgumentException("exceptionRateThreshold cannot be negative");
+        }
+        this.exceptionCountThreshold = (int) Math.ceil(windowSize * exceptionRateThreshold);
         this.window = new int[windowSize];
         this.index = 0;
         this.windowSum = 0;
@@ -48,7 +54,7 @@ public class SimpleMovingWindowStrategy implements CloseObserveStrategy {
             windowSum += value;
             window[index] = value;
             index = (index + 1) % windowSize;
-            shouldTrip = (double) windowSum / windowSize >= threshold;
+            shouldTrip = windowSum >= exceptionCountThreshold;
         } finally {
             lock.unlock();
         }

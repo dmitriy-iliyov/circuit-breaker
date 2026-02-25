@@ -19,9 +19,15 @@ public class FixedRequestWindowErrorRateStrategy implements HalfOpenObserveStrat
     private volatile HalfOpenTransition transition;
     private Lock lock = new ReentrantLock();
 
-    public FixedRequestWindowErrorRateStrategy(int windowSize, double threshold) {
+    public FixedRequestWindowErrorRateStrategy(int windowSize, double exceptionRateThreshold) {
+        if (windowSize < 0) {
+            throw new IllegalArgumentException("windowSize cannot be negative");
+        }
         this.windowSize = windowSize;
-        this.exceptionCountThreshold = (int) (windowSize * threshold);
+        if (exceptionRateThreshold < 0) {
+            throw new IllegalArgumentException("exceptionRateThreshold cannot be negative");
+        }
+        this.exceptionCountThreshold = (int) Math.ceil(windowSize * exceptionRateThreshold);
         this.requestCount = 0;
         this.exceptionCount = 0;
         this.transition = HalfOpenTransition.NO_TRANSITION;

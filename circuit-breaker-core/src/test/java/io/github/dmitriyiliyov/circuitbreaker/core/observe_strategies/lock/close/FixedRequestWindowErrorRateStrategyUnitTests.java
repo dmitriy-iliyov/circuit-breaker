@@ -1,6 +1,7 @@
 package io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.lock.close;
 
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -8,6 +9,7 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class FixedRequestWindowErrorRateStrategyUnitTests {
 
@@ -19,7 +21,7 @@ public class FixedRequestWindowErrorRateStrategyUnitTests {
             Map<Integer, Map<Integer, Boolean>> answers
     ) {
         public static TestParams of(int windowSize, double threshold, Map<Integer, Map<Integer, Boolean>> answers) {
-            int exceptionallyRequestCount = (int) (windowSize * threshold);
+            int exceptionallyRequestCount = (int) Math.ceil(windowSize * threshold);
             int successRequestCount = windowSize - exceptionallyRequestCount;
             return new TestParams(windowSize, threshold, exceptionallyRequestCount, successRequestCount, answers);
         }
@@ -200,5 +202,21 @@ public class FixedRequestWindowErrorRateStrategyUnitTests {
 
         strategy.onException();
         assertThat(strategy.shouldTrip()).isEqualTo(params.answers().get(7).get(2));
+    }
+
+    @Test
+    @DisplayName("should throw exception for negative window size")
+    public void shouldThrowExceptionForNegativeWindowSize() {
+        assertThatThrownBy(() -> new FixedRequestWindowErrorRateStrategy(-1, 0.5))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("windowSize cannot be negative");
+    }
+
+    @Test
+    @DisplayName("should throw exception for negative threshold")
+    public void shouldThrowExceptionForNegativeThreshold() {
+        assertThatThrownBy(() -> new FixedRequestWindowErrorRateStrategy(10, -0.1))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("exceptionRateThreshold cannot be negative");
     }
 }

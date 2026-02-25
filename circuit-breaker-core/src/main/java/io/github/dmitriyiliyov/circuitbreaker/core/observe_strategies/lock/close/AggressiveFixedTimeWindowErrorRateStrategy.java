@@ -1,6 +1,7 @@
 package io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.lock.close;
 
 import java.time.Duration;
+import java.util.Objects;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -14,16 +15,20 @@ import java.util.concurrent.locks.ReentrantLock;
 public class AggressiveFixedTimeWindowErrorRateStrategy implements CloseObserveStrategy {
 
     private final long observeTimeMillis;
-    private final double threshold;
+    private final double exceptionRateThreshold;
     private long observeEndMillis;
     private int requestCount;
     private int exceptionCount;
     private volatile boolean shouldTrip;
     private final Lock lock = new ReentrantLock();
 
-    public AggressiveFixedTimeWindowErrorRateStrategy(Duration observeTime, double threshold) {
+    public AggressiveFixedTimeWindowErrorRateStrategy(Duration observeTime, double exceptionRateThreshold) {
+        Objects.requireNonNull(observeTime, "cannot be null");
         this.observeTimeMillis = observeTime.toMillis();
-        this.threshold = threshold;
+        if (exceptionRateThreshold < 0) {
+            throw new IllegalArgumentException("exceptionRateThreshold cannot be negative");
+        }
+        this.exceptionRateThreshold = exceptionRateThreshold;
         this.observeEndMillis = System.currentTimeMillis() + observeTimeMillis;
         this.requestCount = 0;
         this.exceptionCount = 0;
@@ -60,7 +65,7 @@ public class AggressiveFixedTimeWindowErrorRateStrategy implements CloseObserveS
                 shouldTrip = false;
             }
             exceptionCount++;
-            shouldTrip = (double) exceptionCount / requestCount >= threshold;
+            shouldTrip = (double) exceptionCount / requestCount >= exceptionRateThreshold;
         } finally {
             lock.unlock();
         }

@@ -1,6 +1,7 @@
 package io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.lock.open;
 
 import java.time.Duration;
+import java.util.Objects;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -9,15 +10,16 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public class FailFastFixedTimeWindowStrategy implements OpenObserveStrategy {
 
-    private final long ttlMillis;
+    private final long observeTimeMillis;
     private long observeEndMillis;
     private boolean shouldTrip;
     private final Lock lock = new ReentrantLock();
 
-    public FailFastFixedTimeWindowStrategy(Duration ttl) {
-        this.ttlMillis = ttl.toMillis();
+    public FailFastFixedTimeWindowStrategy(Duration observeTime) {
+        Objects.requireNonNull(observeTime, "observeTime cannot be null");
+        this.observeTimeMillis = observeTime.toMillis();
         this.shouldTrip = false;
-        this.observeEndMillis = System.currentTimeMillis() + ttlMillis;
+        this.observeEndMillis = System.currentTimeMillis() + observeTimeMillis;
     }
 
     @Override
@@ -26,7 +28,7 @@ public class FailFastFixedTimeWindowStrategy implements OpenObserveStrategy {
         try {
             long currentMillis = System.currentTimeMillis();
             if (currentMillis > observeEndMillis) {
-                observeEndMillis = currentMillis + ttlMillis;
+                observeEndMillis = currentMillis + observeTimeMillis;
                 shouldTrip = true;
             }
         } finally {
@@ -44,7 +46,7 @@ public class FailFastFixedTimeWindowStrategy implements OpenObserveStrategy {
         lock.lock();
         try {
             shouldTrip = false;
-            observeEndMillis = System.currentTimeMillis() + ttlMillis;
+            observeEndMillis = System.currentTimeMillis() + observeTimeMillis;
         } finally {
             lock.unlock();
         }

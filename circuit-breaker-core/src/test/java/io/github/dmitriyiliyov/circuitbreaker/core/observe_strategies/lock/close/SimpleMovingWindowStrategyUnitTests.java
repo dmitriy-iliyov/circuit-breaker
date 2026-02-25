@@ -1,83 +1,184 @@
 package io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.lock.close;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import java.util.Map;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class SimpleMovingWindowStrategyUnitTests {
 
-    private SimpleMovingWindowStrategy strategy;
-
-    @BeforeEach
-    public void refreshStrategy() {
-        strategy = new SimpleMovingWindowStrategy(10, 0.2);
+    public record TestParams(
+            int windowSize,
+            double threshold,
+            int exceptionallyRequestCount,
+            int successRequestCount,
+            Map<Integer, Map<Integer, Boolean>> answers
+    ) {
+        public static TestParams of(int windowSize, double threshold, Map<Integer, Map<Integer, Boolean>> answers) {
+            // Use ceil to ensure we have enough exceptions to meet or exceed threshold
+            int exceptionallyRequestCount = (int) Math.ceil(windowSize * threshold);
+            // If threshold > 0 but calculated count is 0 (e.g. very small threshold), ensure at least 1
+            if (threshold > 0 && exceptionallyRequestCount == 0) {
+                exceptionallyRequestCount = 1;
+            }
+            
+            int successRequestCount = windowSize - exceptionallyRequestCount;
+            return new TestParams(windowSize, threshold, exceptionallyRequestCount, successRequestCount, answers);
+        }
     }
 
-    @Test
-    @DisplayName("UT: all requests without exceptions should result in shouldTrip being false")
-    public void allRequestWithoutExceptions_shouldTripShouldBeFalse() {
-        for (int i = 0; i < 10; i++) {
-            strategy.onRequest();
-        }
-        assertThat(strategy.shouldTrip()).isFalse();
+    static Stream<TestParams> testConfig() {
+        Map<Integer, Map<Integer, Boolean>> standardAnswers = Map.of(
+                1, Map.of(1, false),
+                2, Map.of(1, false),
+                3, Map.of(1, true),
+                4, Map.of(1, false, 2, false),
+                5, Map.of(1, true, 2, false, 3, false)
+        );
+        
+        Map<Integer, Map<Integer, Boolean>> sensitiveAnswers = Map.of(
+                1, Map.of(1, false),
+                2, Map.of(1, false),
+                3, Map.of(1, true),
+                4, Map.of(1, false, 2, false),
+                5, Map.of(1, true, 2, false, 3, true)
+        );
+
+        Map<Integer, Map<Integer, Boolean>> answersForThresholdZero = Map.of(
+                1, Map.of(1, true),
+                2, Map.of(1, true),
+                3, Map.of(1, true),
+                4, Map.of(1, true, 2, true),
+                5, Map.of(1, true, 2, false, 3, true)
+        );
+
+        return Stream.of(
+                TestParams.of(10, 0.1, sensitiveAnswers),
+                TestParams.of(10, 1, standardAnswers),
+                TestParams.of(10, 0, answersForThresholdZero),
+                TestParams.of(10, 0.25, standardAnswers),
+                TestParams.of(17, 0.2, standardAnswers),
+                TestParams.of(37, 0.3, standardAnswers),
+                TestParams.of(37, 0.31, standardAnswers),
+                TestParams.of(169, 0.87, standardAnswers),
+                TestParams.of(4123, 0.001, standardAnswers),
+                TestParams.of(47, 0.21, standardAnswers)
+        );
     }
 
-    @Test
-    @DisplayName("UT: exception frequency threshold not reached should result in shouldTrip being false")
-    public void exceptionFrequencyThresholdNotReached_shouldTripShouldBeFalse() {
-        for (int i = 0; i < 9; i++) {
+    @ParameterizedTest
+    @MethodSource("testConfig")
+    @DisplayName("UT №1: all requests without exceptions should result in shouldTrip being false")
+    public void allRequestWithoutExceptions_shouldTripShouldBeFalse(TestParams params) {
+        SimpleMovingWindowStrategy strategy = new SimpleMovingWindowStrategy(
+                params.windowSize(), params.threshold()
+        );
+        for (int i = 0; i < params.windowSize; i++) {
             strategy.onRequest();
         }
-        for (int i = 0; i < 1; i++) {
+        assertThat(strategy.shouldTrip()).isEqualTo(params.answers().get(1).get(1));
+    }
+
+    @ParameterizedTest
+    @MethodSource("testConfig")
+    @DisplayName("UT №2: exception frequency threshold not reached should result in shouldTrip being false")
+    public void exceptionFrequencyThresholdNotReached_shouldTripShouldBeFalse(TestParams params) {
+        SimpleMovingWindowStrategy strategy = new SimpleMovingWindowStrategy(
+                params.windowSize(), params.threshold()
+        );
+        
+        int exceptions = 0;
+        if (params.threshold() > 0) {
+             double limit = params.windowSize() * params.threshold();
+             int maxExceptions = (int) Math.ceil(limit) - 1;
+             exceptions = Math.max(0, maxExceptions);
+        }
+        
+        for (int i = 0; i < params.windowSize() - exceptions; i++) {
+            strategy.onRequest();
+        }
+        for (int i = 0; i < exceptions; i++) {
             strategy.onException();
         }
-        assertThat(strategy.shouldTrip()).isFalse();
+        assertThat(strategy.shouldTrip()).isEqualTo(params.answers().get(2).get(1));
     }
 
-    @Test
-    @DisplayName("UT: exception frequency threshold reached should result in shouldTrip being true")
-    public void exceptionFrequencyThresholdReached_shouldTripShouldBeTrue() {
-        for (int i = 0; i < 8; i++) {
+    @ParameterizedTest
+    @MethodSource("testConfig")
+    @DisplayName("UT №3: exception frequency threshold reached should result in shouldTrip being true")
+    public void exceptionFrequencyThresholdReached_shouldTripShouldBeTrue(TestParams params) {
+        SimpleMovingWindowStrategy strategy = new SimpleMovingWindowStrategy(
+                params.windowSize(), params.threshold()
+        );
+        for (int i = 0; i < params.successRequestCount(); i++) {
             strategy.onRequest();
         }
-        for (int i = 0; i < 2; i++) {
+        for (int i = 0; i < params.exceptionallyRequestCount(); i++) {
             strategy.onException();
         }
-        assertThat(strategy.shouldTrip()).isTrue();
+        assertThat(strategy.shouldTrip()).isEqualTo(params.answers().get(3).get(1));
     }
 
-    @Test
-    @DisplayName("UT: one success round followed by another success round should result in shouldTrip being false")
-    public void oneSuccessRound_shouldTripShouldBeFalse() {
-        for (int i = 0; i < 10; i++) {
+    @ParameterizedTest
+    @MethodSource("testConfig")
+    @DisplayName("UT №4: one success round followed by another success round should result in shouldTrip being false")
+    public void oneSuccessRound_shouldTripShouldBeFalse(TestParams params) {
+        SimpleMovingWindowStrategy strategy = new SimpleMovingWindowStrategy(
+                params.windowSize(), params.threshold()
+        );
+        for (int i = 0; i < params.windowSize(); i++) {
             strategy.onRequest();
         }
-        assertThat(strategy.shouldTrip()).isFalse();
+        assertThat(strategy.shouldTrip()).isEqualTo(params.answers().get(4).get(1));
 
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < params.windowSize(); i++) {
             strategy.onRequest();
         }
-        assertThat(strategy.shouldTrip()).isFalse();
+        assertThat(strategy.shouldTrip()).isEqualTo(params.answers().get(4).get(2));
     }
 
-    @Test
-    @DisplayName("UT: reset should clear state and shouldTrip should be false")
-    public void reset_shouldClearStateAndShouldTripShouldBeFalse() {
-        for (int i = 0; i < 8; i++) {
+    @ParameterizedTest
+    @MethodSource("testConfig")
+    @DisplayName("UT №5: reset should clear state and shouldTrip should be false")
+    public void reset_shouldClearStateAndShouldTripShouldBeFalse(TestParams params) {
+        SimpleMovingWindowStrategy strategy = new SimpleMovingWindowStrategy(
+                params.windowSize(), params.threshold()
+        );
+        for (int i = 0; i < params.successRequestCount(); i++) {
             strategy.onRequest();
         }
-        for (int i = 0; i < 2; i++) {
+        for (int i = 0; i < params.exceptionallyRequestCount(); i++) {
             strategy.onException();
         }
-        assertThat(strategy.shouldTrip()).isTrue();
+
+        assertThat(strategy.shouldTrip()).isEqualTo(params.answers().get(5).get(1));
 
         strategy.reset();
-
-        assertThat(strategy.shouldTrip()).isFalse();
+        assertThat(strategy.shouldTrip()).isEqualTo(params.answers().get(5).get(2));
 
         strategy.onException();
-        assertThat(strategy.shouldTrip()).isFalse();
+        assertThat(strategy.shouldTrip()).isEqualTo(params.answers().get(5).get(3));
+    }
+
+    @Test
+    @DisplayName("should throw exception for negative window size")
+    public void shouldThrowExceptionForNegativeWindowSize() {
+        assertThatThrownBy(() -> new SimpleMovingWindowStrategy(-1, 0.5))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("windowSize cannot be negative");
+    }
+
+    @Test
+    @DisplayName("should throw exception for negative threshold")
+    public void shouldThrowExceptionForNegativeThreshold() {
+        assertThatThrownBy(() -> new SimpleMovingWindowStrategy(10, -0.1))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("exceptionRateThreshold cannot be negative");
     }
 }

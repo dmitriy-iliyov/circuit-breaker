@@ -14,11 +14,17 @@ public class FixedRequestWindowErrorRateStrategy implements CloseObserveStrategy
     private int requestCount;
     private int exceptionCount;
     private volatile boolean shouldTrip;
-    private Lock lock = new ReentrantLock();
+    private final Lock lock = new ReentrantLock();
 
-    public FixedRequestWindowErrorRateStrategy(int windowSize, double threshold) {
+    public FixedRequestWindowErrorRateStrategy(int windowSize, double exceptionRateThreshold) {
+        if (windowSize < 0) {
+            throw new IllegalArgumentException("windowSize cannot be negative");
+        }
         this.windowSize = windowSize;
-        this.exceptionCountThreshold = (int) (threshold * windowSize);
+        if (exceptionRateThreshold < 0) {
+            throw new IllegalArgumentException("exceptionRateThreshold cannot be negative");
+        }
+        this.exceptionCountThreshold = (int) Math.ceil(exceptionRateThreshold * windowSize);
         this.requestCount = 0;
         this.exceptionCount = 0;
         this.shouldTrip = false;

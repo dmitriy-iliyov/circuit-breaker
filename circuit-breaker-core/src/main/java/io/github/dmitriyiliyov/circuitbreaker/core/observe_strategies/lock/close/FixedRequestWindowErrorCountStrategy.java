@@ -10,15 +10,21 @@ import java.util.concurrent.locks.ReentrantLock;
 public class FixedRequestWindowErrorCountStrategy implements CloseObserveStrategy {
 
     private final int windowSize;
-    private final long threshold;
+    private final long exceptionCountThreshold;
     private int requestCount;
     private int exceptionCount;
     private volatile boolean shouldTrip;
     private final Lock lock = new ReentrantLock();
 
-    public FixedRequestWindowErrorCountStrategy(int windowSize, long threshold) {
+    public FixedRequestWindowErrorCountStrategy(int windowSize, long exceptionCountThreshold) {
+        if (windowSize < 0) {
+            throw new IllegalArgumentException("windowSize cannot be negative");
+        }
         this.windowSize = windowSize;
-        this.threshold = threshold;
+        if (exceptionCountThreshold < 0) {
+            throw new IllegalArgumentException("exceptionCountThreshold cannot be negative");
+        }
+        this.exceptionCountThreshold = exceptionCountThreshold;
         this.requestCount = 0;
         this.exceptionCount = 0;
         this.shouldTrip = false;
@@ -50,7 +56,7 @@ public class FixedRequestWindowErrorCountStrategy implements CloseObserveStrateg
                 shouldTrip = false;
             }
             exceptionCount++;
-            shouldTrip = exceptionCount >= threshold;
+            shouldTrip = exceptionCount >= exceptionCountThreshold;
         } finally {
             lock.unlock();
         }
