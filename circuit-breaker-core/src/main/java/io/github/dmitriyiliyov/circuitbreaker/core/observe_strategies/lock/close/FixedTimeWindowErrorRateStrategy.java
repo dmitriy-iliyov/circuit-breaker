@@ -1,5 +1,7 @@
 package io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.lock.close;
 
+import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.CloseObserveStrategy;
+
 import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.locks.Lock;
@@ -8,31 +10,29 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  * A {@link CloseObserveStrategy} that trips the circuit breaker when the error rate
  * exceeds a threshold within a fixed time window, but only after a certain
- * minimum number of requests have been observed.
+ * observation start time has passed.
  */
-public class WaitingRequestFixedTimeWindowErrorRateStrategy implements CloseObserveStrategy {
+public class FixedTimeWindowErrorRateStrategy implements CloseObserveStrategy {
 
-    private final long observeTimeMillis;
+    private final long observeMillis;
     private final double exceptionRateThreshold;
-    private final int observeStartRequestCount;
+    private final long observeStartMillis;
     private long observeEndMillis;
     private int requestCount;
     private int exceptionCount;
     private volatile boolean shouldTrip;
     private final Lock lock = new ReentrantLock();
 
-    public WaitingRequestFixedTimeWindowErrorRateStrategy(Duration observeTime, double exceptionRateThreshold, int observeStartRequestCount) {
-        Objects.requireNonNull(observeTime, "cannot be null");
-        this.observeTimeMillis = observeTime.toMillis();
+    public FixedTimeWindowErrorRateStrategy(Duration observeTime, double exceptionRateThreshold, Duration waitBeforeStartTime) {
+        Objects.requireNonNull(observeTime, "observeTime cannot be null");
+        this.observeMillis = observeTime.toMillis();
         if (exceptionRateThreshold < 0) {
-            throw new IllegalArgumentException("exceptionRateThreshold cannot be negative");
+            throw new IllegalArgumentException("exceptionRateThreshold must be >= 0");
         }
         this.exceptionRateThreshold = exceptionRateThreshold;
-        if (observeStartRequestCount < 0) {
-            throw new IllegalArgumentException("observeStartRequestCount cannot be negative");
-        }
-        this.observeStartRequestCount = observeStartRequestCount;
-        this.observeEndMillis = System.currentTimeMillis() + observeTimeMillis;
+        Objects.requireNonNull(waitBeforeStartTime, "waitBeforeStartTime cannot be null");
+        this.observeStartMillis = System.currentTimeMillis() + waitBeforeStartTime.toMillis();
+        this.observeEndMillis = observeStartMillis + observeMillis;
         this.requestCount = 0;
         this.exceptionCount = 0;
         this.shouldTrip = false;
@@ -44,8 +44,11 @@ public class WaitingRequestFixedTimeWindowErrorRateStrategy implements CloseObse
         try {
             requestCount++;
             long currentMillis = System.currentTimeMillis();
+            if (currentMillis < observeStartMillis) {
+                return;
+            }
             if (currentMillis > observeEndMillis) {
-                observeEndMillis = currentMillis + observeTimeMillis;
+                observeEndMillis = currentMillis + observeMillis;
                 requestCount = 1;
                 exceptionCount = 0;
                 shouldTrip = false;
@@ -61,16 +64,17 @@ public class WaitingRequestFixedTimeWindowErrorRateStrategy implements CloseObse
         try {
             requestCount++;
             long currentMillis = System.currentTimeMillis();
+            if (currentMillis < observeStartMillis) {
+                return;
+            }
             if (currentMillis > observeEndMillis) {
-                observeEndMillis = currentMillis + observeTimeMillis;
+                observeEndMillis = currentMillis + observeMillis;
                 requestCount = 1;
                 exceptionCount = 0;
                 shouldTrip = false;
             }
             exceptionCount++;
-            if (requestCount >= observeStartRequestCount) {
-                shouldTrip = (double) exceptionCount / requestCount >= exceptionRateThreshold;
-            }
+            shouldTrip = (double) exceptionCount / requestCount >= exceptionRateThreshold;
         } finally {
             lock.unlock();
         }
@@ -85,7 +89,7 @@ public class WaitingRequestFixedTimeWindowErrorRateStrategy implements CloseObse
     public void reset() {
         lock.lock();
         try {
-            observeEndMillis = System.currentTimeMillis() + observeTimeMillis;
+            observeEndMillis = System.currentTimeMillis() + observeMillis;
             requestCount = 0;
             exceptionCount = 0;
             shouldTrip = false;

@@ -1,5 +1,8 @@
 package io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.lock.half_open;
 
+import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.HalfOpenObserveStrategy;
+import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.HalfOpenTransition;
+
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -20,12 +23,12 @@ public class FixedRequestWindowErrorRateStrategy implements HalfOpenObserveStrat
     private Lock lock = new ReentrantLock();
 
     public FixedRequestWindowErrorRateStrategy(int windowSize, double exceptionRateThreshold) {
-        if (windowSize < 0) {
-            throw new IllegalArgumentException("windowSize cannot be negative");
+        if (windowSize <= 0) {
+            throw new IllegalArgumentException("windowSize must be > 0");
         }
         this.windowSize = windowSize;
         if (exceptionRateThreshold < 0) {
-            throw new IllegalArgumentException("exceptionRateThreshold cannot be negative");
+            throw new IllegalArgumentException("exceptionRateThreshold must be >= 0");
         }
         this.exceptionCountThreshold = (int) Math.ceil(windowSize * exceptionRateThreshold);
         this.requestCount = 0;

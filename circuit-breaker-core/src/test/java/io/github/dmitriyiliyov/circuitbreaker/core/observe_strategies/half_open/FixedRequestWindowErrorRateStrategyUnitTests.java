@@ -1,11 +1,16 @@
-package io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.lock.half_open;
+package io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.half_open;
 
+import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.HalfOpenObserveStrategy;
+import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.HalfOpenTransition;
+import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.lock.half_open.FixedRequestWindowErrorRateStrategy;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import java.util.Collections;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -27,7 +32,7 @@ public class FixedRequestWindowErrorRateStrategyUnitTests {
         }
     }
 
-    static Stream<TestParams> testConfig() {
+    static Stream<TestParams> testParams() {
         Map<Integer, Map<Integer, HalfOpenTransition>> commonAnswers = Map.of(
                 1, Map.of(1, HalfOpenTransition.TO_CLOSE),
                 2, Map.of(1, HalfOpenTransition.TO_CLOSE),
@@ -47,13 +52,27 @@ public class FixedRequestWindowErrorRateStrategyUnitTests {
         );
     }
 
-    @ParameterizedTest
-    @MethodSource("testConfig")
-    @DisplayName("UT №1: all requests without exceptions should result in transition TO_CLOSE")
-    public void allRequestWithoutExceptions_shouldTransitionToClose(TestParams params) {
-        FixedRequestWindowErrorRateStrategy strategy = new FixedRequestWindowErrorRateStrategy(
-                params.windowSize(), params.threshold()
+    static Stream<Function<TestParams, HalfOpenObserveStrategy>> strategySuppliers() {
+        return Stream.of(
+                testParams -> new FixedRequestWindowErrorRateStrategy(testParams.windowSize(), testParams.threshold()),
+                testParams -> new io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.lock_free.half_open.
+                        FixedRequestWindowErrorRateStrategy(testParams.windowSize(), testParams.threshold())
         );
+    }
+
+    static Stream<Arguments> arguments() {
+        return testParams().flatMap(params -> strategySuppliers()
+                .map(supplier -> Arguments.of(params, supplier))
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("arguments")
+    @DisplayName("UT №1: all requests without exceptions should result in transition TO_CLOSE")
+    public void allRequestWithoutExceptions_shouldTransitionToClose(
+            TestParams params, Function<TestParams, HalfOpenObserveStrategy> strategySupplier
+    ) {
+        HalfOpenObserveStrategy strategy = strategySupplier.apply(params);
         for (int i = 0; i < params.windowSize(); i++) {
             strategy.onRequest();
         }
@@ -61,12 +80,12 @@ public class FixedRequestWindowErrorRateStrategyUnitTests {
     }
 
     @ParameterizedTest
-    @MethodSource("testConfig")
+    @MethodSource("arguments")
     @DisplayName("UT №2: exception frequency threshold not reached should result in transition TO_CLOSE")
-    public void exceptionFrequencyThresholdNotReached_shouldTransitionToClose(TestParams params) {
-        FixedRequestWindowErrorRateStrategy strategy = new FixedRequestWindowErrorRateStrategy(
-                params.windowSize(), params.threshold()
-        );
+    public void exceptionFrequencyThresholdNotReached_shouldTransitionToClose(
+            TestParams params, Function<TestParams, HalfOpenObserveStrategy> strategySupplier
+    ) {
+        HalfOpenObserveStrategy strategy = strategySupplier.apply(params);
         for (int i = 0; i < params.windowSize() - 1; i++) {
             strategy.onRequest();
         }
@@ -77,12 +96,12 @@ public class FixedRequestWindowErrorRateStrategyUnitTests {
     }
 
     @ParameterizedTest
-    @MethodSource("testConfig")
+    @MethodSource("arguments")
     @DisplayName("UT №3: exception frequency threshold reached should result in transition TO_OPEN")
-    public void exceptionFrequencyThresholdReached_shouldTransitionToOpen(TestParams params) {
-        FixedRequestWindowErrorRateStrategy strategy = new FixedRequestWindowErrorRateStrategy(
-                params.windowSize(), params.threshold()
-        );
+    public void exceptionFrequencyThresholdReached_shouldTransitionToOpen(
+            TestParams params, Function<TestParams, HalfOpenObserveStrategy> strategySupplier
+    ) {
+        HalfOpenObserveStrategy strategy = strategySupplier.apply(params);
         for (int i = 0; i < params.successRequestCount(); i++) {
             strategy.onRequest();
         }
@@ -93,12 +112,12 @@ public class FixedRequestWindowErrorRateStrategyUnitTests {
     }
 
     @ParameterizedTest
-    @MethodSource("testConfig")
+    @MethodSource("arguments")
     @DisplayName("UT №4: not enough requests should result in NO_TRANSITION")
-    public void notEnoughRequests_shouldResultInNoTransition(TestParams params) {
-        FixedRequestWindowErrorRateStrategy strategy = new FixedRequestWindowErrorRateStrategy(
-                params.windowSize(), params.threshold()
-        );
+    public void notEnoughRequests_shouldResultInNoTransition(
+            TestParams params, Function<TestParams, HalfOpenObserveStrategy> strategySupplier
+    ) {
+        HalfOpenObserveStrategy strategy = strategySupplier.apply(params);
         for (int i = 0; i < params.windowSize() - 1; i++) {
             strategy.onRequest();
         }
@@ -106,12 +125,12 @@ public class FixedRequestWindowErrorRateStrategyUnitTests {
     }
 
     @ParameterizedTest
-    @MethodSource("testConfig")
+    @MethodSource("arguments")
     @DisplayName("UT №5: transition to OPEN should not be overwritten by subsequent successful requests")
-    public void transitionToOpen_shouldNotBeOverwrittenBySubsequentRequests(TestParams params) {
-        FixedRequestWindowErrorRateStrategy strategy = new FixedRequestWindowErrorRateStrategy(
-                params.windowSize(), params.threshold()
-        );
+    public void transitionToOpen_shouldNotBeOverwrittenBySubsequentRequests(
+            TestParams params, Function<TestParams, HalfOpenObserveStrategy> strategySupplier
+    ) {
+        HalfOpenObserveStrategy strategy = strategySupplier.apply(params);
         for (int i = 0; i < params.exceptionallyRequestCount(); i++) {
             strategy.onException();
         }
@@ -126,12 +145,12 @@ public class FixedRequestWindowErrorRateStrategyUnitTests {
     }
 
     @ParameterizedTest
-    @MethodSource("testConfig")
+    @MethodSource("arguments")
     @DisplayName("UT №6: reset should clear state and transition should be NO_TRANSITION")
-    public void reset_shouldClearStateAndTransitionShouldBeNoTransition(TestParams params) {
-        FixedRequestWindowErrorRateStrategy strategy = new FixedRequestWindowErrorRateStrategy(
-                params.windowSize(), params.threshold()
-        );
+    public void reset_shouldClearStateAndTransitionShouldBeNoTransition(
+            TestParams params, Function<TestParams, HalfOpenObserveStrategy> strategySupplier
+    ) {
+        HalfOpenObserveStrategy strategy = strategySupplier.apply(params);
         for (int i = 0; i < params.windowSize(); i++) {
             strategy.onRequest();
         }
@@ -144,19 +163,21 @@ public class FixedRequestWindowErrorRateStrategyUnitTests {
         assertThat(strategy.getTransition()).isEqualTo(params.answers().get(6).get(3));
     }
 
-    @Test
+    @ParameterizedTest
+    @MethodSource("strategySuppliers")
     @DisplayName("should throw exception for negative window size")
-    public void shouldThrowExceptionForNegativeWindowSize() {
-        assertThatThrownBy(() -> new FixedRequestWindowErrorRateStrategy(-1, 0.5))
+    public void shouldThrowExceptionForNegativeWindowSize(Function<TestParams, HalfOpenObserveStrategy> strategySupplier) {
+        assertThatThrownBy(() -> strategySupplier.apply(TestParams.of(-1, 0.5, Collections.emptyMap())))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("windowSize cannot be negative");
+                .hasMessage("windowSize must be > 0");
     }
 
-    @Test
+    @ParameterizedTest
+    @MethodSource("strategySuppliers")
     @DisplayName("should throw exception for negative threshold")
-    public void shouldThrowExceptionForNegativeThreshold() {
-        assertThatThrownBy(() -> new FixedRequestWindowErrorRateStrategy(10, -0.1))
+    public void shouldThrowExceptionForNegativeThreshold(Function<TestParams, HalfOpenObserveStrategy> strategySupplier) {
+        assertThatThrownBy(() -> strategySupplier.apply(TestParams.of(10, -0.1, Collections.emptyMap())))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("exceptionRateThreshold cannot be negative");
+                .hasMessage("exceptionRateThreshold must be >= 0");
     }
 }

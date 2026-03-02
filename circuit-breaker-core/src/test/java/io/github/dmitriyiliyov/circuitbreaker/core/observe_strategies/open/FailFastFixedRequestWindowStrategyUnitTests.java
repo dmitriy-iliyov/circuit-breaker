@@ -1,11 +1,15 @@
-package io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.lock.open;
+package io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.open;
 
+import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.OpenObserveStrategy;
+import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.lock.open.FailFastFixedRequestWindowStrategy;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import java.util.Collections;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -22,7 +26,7 @@ public class FailFastFixedRequestWindowStrategyUnitTests {
         }
     }
 
-    static Stream<TestParams> testConfig() {
+    static Stream<TestParams> testParams() {
         Map<Integer, Map<Integer, Boolean>> commonAnswers = Map.of(
                 1, Map.of(1, false),
                 2, Map.of(1, true),
@@ -37,11 +41,27 @@ public class FailFastFixedRequestWindowStrategyUnitTests {
         );
     }
 
+    static Stream<Function<TestParams, OpenObserveStrategy>> strategySuppliers() {
+        return Stream.of(
+                testParams -> new FailFastFixedRequestWindowStrategy(testParams.windowSize()),
+                testParams -> new io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.lock_free.open.
+                        FailFastFixedRequestWindowStrategy(testParams.windowSize())
+        );
+    }
+
+    static Stream<Arguments> arguments() {
+        return testParams().flatMap(params -> strategySuppliers()
+                .map(supplier -> Arguments.of(params, supplier))
+        );
+    }
+
     @ParameterizedTest
-    @MethodSource("testConfig")
+    @MethodSource("arguments")
     @DisplayName("UT №1: requests below window size should result in shouldTrip being false")
-    public void requestsBelowWindowSize_shouldTripShouldBeFalse(TestParams params) {
-        FailFastFixedRequestWindowStrategy strategy = new FailFastFixedRequestWindowStrategy(params.windowSize());
+    public void requestsBelowWindowSize_shouldTripShouldBeFalse(
+            TestParams params, Function<TestParams, OpenObserveStrategy> strategySupplier
+    ) {
+        OpenObserveStrategy strategy = strategySupplier.apply(params);
         for (int i = 0; i < params.windowSize() - 1; i++) {
             strategy.onRequest();
         }
@@ -49,10 +69,12 @@ public class FailFastFixedRequestWindowStrategyUnitTests {
     }
 
     @ParameterizedTest
-    @MethodSource("testConfig")
+    @MethodSource("arguments")
     @DisplayName("UT №2: requests equal to window size should result in shouldTrip being true")
-    public void requestsEqualToWindowSize_shouldTripShouldBeTrue(TestParams params) {
-        FailFastFixedRequestWindowStrategy strategy = new FailFastFixedRequestWindowStrategy(params.windowSize());
+    public void requestsEqualToWindowSize_shouldTripShouldBeTrue(
+            TestParams params, Function<TestParams, OpenObserveStrategy> strategySupplier
+    ) {
+        OpenObserveStrategy strategy = strategySupplier.apply(params);
         for (int i = 0; i < params.windowSize(); i++) {
             strategy.onRequest();
         }
@@ -60,10 +82,12 @@ public class FailFastFixedRequestWindowStrategyUnitTests {
     }
 
     @ParameterizedTest
-    @MethodSource("testConfig")
+    @MethodSource("arguments")
     @DisplayName("UT №3: requests above window size should result in shouldTrip being true")
-    public void requestsAboveWindowSize_shouldTripShouldBeTrue(TestParams params) {
-        FailFastFixedRequestWindowStrategy strategy = new FailFastFixedRequestWindowStrategy(params.windowSize());
+    public void requestsAboveWindowSize_shouldTripShouldBeTrue(
+            TestParams params, Function<TestParams, OpenObserveStrategy> strategySupplier
+    ) {
+        OpenObserveStrategy strategy = strategySupplier.apply(params);
         for (int i = 0; i < params.windowSize() + 1; i++) {
             strategy.onRequest();
         }
@@ -71,10 +95,12 @@ public class FailFastFixedRequestWindowStrategyUnitTests {
     }
 
     @ParameterizedTest
-    @MethodSource("testConfig")
+    @MethodSource("arguments")
     @DisplayName("UT №4: reset should clear state and shouldTrip should be false")
-    public void reset_shouldClearStateAndShouldTripShouldBeFalse(TestParams params) {
-        FailFastFixedRequestWindowStrategy strategy = new FailFastFixedRequestWindowStrategy(params.windowSize());
+    public void reset_shouldClearStateAndShouldTripShouldBeFalse(
+            TestParams params, Function<TestParams, OpenObserveStrategy> strategySupplier
+    ) {
+        OpenObserveStrategy strategy = strategySupplier.apply(params);
         for (int i = 0; i < params.windowSize(); i++) {
             strategy.onRequest();
         }
@@ -87,11 +113,12 @@ public class FailFastFixedRequestWindowStrategyUnitTests {
         assertThat(strategy.shouldTrip()).isEqualTo(params.answers().get(4).get(3));
     }
 
-    @Test
+    @ParameterizedTest
+    @MethodSource("strategySuppliers")
     @DisplayName("should throw exception for negative window size")
-    public void shouldThrowExceptionForNegativeWindowSize() {
-        assertThatThrownBy(() -> new FailFastFixedRequestWindowStrategy(-1))
+    public void shouldThrowExceptionForNegativeWindowSize(Function<TestParams, OpenObserveStrategy> strategySupplier) {
+        assertThatThrownBy(() -> strategySupplier.apply(new TestParams(-1, Collections.emptyMap())))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("windowSize cannot be negative");
+                .hasMessage("windowSize must be > 0");
     }
 }

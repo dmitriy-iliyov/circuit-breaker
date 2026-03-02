@@ -1,5 +1,7 @@
 package io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.lock.open;
 
+import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.OpenObserveStrategy;
+
 import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.locks.Lock;
@@ -10,29 +12,30 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public class FailFastFixedTimeWindowStrategy implements OpenObserveStrategy {
 
-    private final long observeTimeMillis;
-    private long observeEndMillis;
-    private boolean shouldTrip;
+    private final long observeMillis;
+    private volatile long observeEndMillis;
+    private volatile boolean shouldTrip;
     private final Lock lock = new ReentrantLock();
 
     public FailFastFixedTimeWindowStrategy(Duration observeTime) {
         Objects.requireNonNull(observeTime, "observeTime cannot be null");
-        this.observeTimeMillis = observeTime.toMillis();
+        this.observeMillis = observeTime.toMillis();
         this.shouldTrip = false;
-        this.observeEndMillis = System.currentTimeMillis() + observeTimeMillis;
+        this.observeEndMillis = System.currentTimeMillis() + observeMillis;
     }
 
     @Override
     public void onRequest() {
-        lock.lock();
-        try {
-            long currentMillis = System.currentTimeMillis();
-            if (currentMillis > observeEndMillis) {
-                observeEndMillis = currentMillis + observeTimeMillis;
-                shouldTrip = true;
+        long currentMillis = System.currentTimeMillis();
+        if (currentMillis > observeEndMillis) {
+            lock.lock();
+            try {
+                if (currentMillis > observeEndMillis) {
+                    shouldTrip = true;
+                }
+            } finally {
+                lock.unlock();
             }
-        } finally {
-            lock.unlock();
         }
     }
 
@@ -45,8 +48,8 @@ public class FailFastFixedTimeWindowStrategy implements OpenObserveStrategy {
     public void reset() {
         lock.lock();
         try {
+            observeEndMillis = System.currentTimeMillis() + observeMillis;
             shouldTrip = false;
-            observeEndMillis = System.currentTimeMillis() + observeTimeMillis;
         } finally {
             lock.unlock();
         }

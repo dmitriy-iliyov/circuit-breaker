@@ -1,5 +1,9 @@
 package io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.lock.close;
 
+import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.CloseObserveStrategy;
+
+import java.time.Duration;
+import java.util.Objects;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -11,20 +15,23 @@ public class FixedRequestWindowErrorRateStrategy implements CloseObserveStrategy
 
     private final int windowSize;
     private final int exceptionCountThreshold;
+    private final long observeStartMillis;
     private int requestCount;
     private int exceptionCount;
     private volatile boolean shouldTrip;
     private final Lock lock = new ReentrantLock();
 
-    public FixedRequestWindowErrorRateStrategy(int windowSize, double exceptionRateThreshold) {
-        if (windowSize < 0) {
-            throw new IllegalArgumentException("windowSize cannot be negative");
+    public FixedRequestWindowErrorRateStrategy(int windowSize, double exceptionRateThreshold, Duration waitBeforeStartTime) {
+        if (windowSize <= 0) {
+            throw new IllegalArgumentException("windowSize must be > 0");
         }
         this.windowSize = windowSize;
         if (exceptionRateThreshold < 0) {
-            throw new IllegalArgumentException("exceptionRateThreshold cannot be negative");
+            throw new IllegalArgumentException("exceptionRateThreshold must be >= 0");
         }
         this.exceptionCountThreshold = (int) Math.ceil(exceptionRateThreshold * windowSize);
+        Objects.requireNonNull(waitBeforeStartTime, "waitBeforeStartTime cannot be null");
+        this.observeStartMillis = System.currentTimeMillis() + waitBeforeStartTime.toMillis();
         this.requestCount = 0;
         this.exceptionCount = 0;
         this.shouldTrip = false;
@@ -32,6 +39,9 @@ public class FixedRequestWindowErrorRateStrategy implements CloseObserveStrategy
 
     @Override
     public void onRequest() {
+        if (System.currentTimeMillis() < observeStartMillis) {
+            return;
+        }
         lock.lock();
         try {
             requestCount++;
@@ -47,6 +57,9 @@ public class FixedRequestWindowErrorRateStrategy implements CloseObserveStrategy
 
     @Override
     public void onException() {
+        if (System.currentTimeMillis() < observeStartMillis) {
+            return;
+        }
         lock.lock();
         try {
             requestCount++;

@@ -1,5 +1,7 @@
 package io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.lock.open;
 
+import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.OpenObserveStrategy;
+
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -14,8 +16,8 @@ public class FailFastFixedRequestWindowStrategy implements OpenObserveStrategy {
     private final Lock lock = new ReentrantLock();
 
     public FailFastFixedRequestWindowStrategy(int windowSize) {
-        if (windowSize < 0) {
-            throw new IllegalArgumentException("windowSize cannot be negative");
+        if (windowSize <= 0) {
+            throw new IllegalArgumentException("windowSize must be > 0");
         }
         this.windowSize = windowSize;
         this.shouldTrip = false;

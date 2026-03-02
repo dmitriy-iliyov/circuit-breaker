@@ -1,5 +1,6 @@
-package io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.lock.close;
+package io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.close;
 
+import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.lock.close.SimpleMovingWindowStrategy;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -171,7 +172,7 @@ public class SimpleMovingWindowStrategyUnitTests {
     public void shouldThrowExceptionForNegativeWindowSize() {
         assertThatThrownBy(() -> new SimpleMovingWindowStrategy(-1, 0.5))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("windowSize cannot be negative");
+                .hasMessage("windowSize must be > 0");
     }
 
     @Test
@@ -179,6 +180,6 @@ public class SimpleMovingWindowStrategyUnitTests {
     public void shouldThrowExceptionForNegativeThreshold() {
         assertThatThrownBy(() -> new SimpleMovingWindowStrategy(10, -0.1))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("exceptionRateThreshold cannot be negative");
+                .hasMessage("exceptionRateThreshold must be >= 0");
     }
 }

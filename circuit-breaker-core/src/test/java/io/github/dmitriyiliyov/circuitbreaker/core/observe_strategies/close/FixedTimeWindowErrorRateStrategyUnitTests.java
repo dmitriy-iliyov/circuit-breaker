@@ -1,18 +1,22 @@
-package io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.lock.close;
+package io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.close;
 
+import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.CloseObserveStrategy;
+import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.lock.close.FixedTimeWindowErrorRateStrategy;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.time.Duration;
+import java.util.Collections;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-public class WaitingTimeFixedTimeWindowErrorRateStrategyUnitTests {
+public class FixedTimeWindowErrorRateStrategyUnitTests {
 
     public record TestParams(
             Duration windowTime,
@@ -41,13 +45,27 @@ public class WaitingTimeFixedTimeWindowErrorRateStrategyUnitTests {
         );
     }
 
-    @ParameterizedTest
-    @MethodSource("testConfig")
-    @DisplayName("UT №1: should NOT trip when time is below observe start time, even if error rate is high")
-    public void shouldNotTrip_whenTimeBelowObserveStartTime(TestParams params) {
-        WaitingTimeFixedTimeWindowErrorRateStrategy strategy = new WaitingTimeFixedTimeWindowErrorRateStrategy(
-                params.windowTime(), params.threshold(), params.observeStartTime()
+    static Stream<Function<TestParams, CloseObserveStrategy>> strategySuppliers() {
+        return Stream.of(
+                testParams -> new FixedTimeWindowErrorRateStrategy(
+                        testParams.windowTime(), testParams.threshold(), testParams.observeStartTime()
+                )
         );
+    }
+
+    static Stream<Arguments> arguments() {
+        return testConfig().flatMap(params -> strategySuppliers()
+                .map(supplier -> Arguments.of(params, supplier))
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("arguments")
+    @DisplayName("UT №1: should NOT trip when time is below observe start time, even if error rate is high")
+    public void shouldNotTrip_whenTimeBelowObserveStartTime(
+            TestParams params, Function<TestParams, CloseObserveStrategy> strategySupplier
+    ) {
+        CloseObserveStrategy strategy = strategySupplier.apply(params);
         for (int i = 0; i < 1; i++) {
             strategy.onRequest();
         }
@@ -59,12 +77,12 @@ public class WaitingTimeFixedTimeWindowErrorRateStrategyUnitTests {
     }
 
     @ParameterizedTest
-    @MethodSource("testConfig")
+    @MethodSource("arguments")
     @DisplayName("UT №2: should NOT trip when time is sufficient but error rate is below threshold")
-    public void shouldNotTrip_whenThresholdNotReached(TestParams params) throws InterruptedException {
-        WaitingTimeFixedTimeWindowErrorRateStrategy strategy = new WaitingTimeFixedTimeWindowErrorRateStrategy(
-                params.windowTime(), params.threshold(), params.observeStartTime()
-        );
+    public void shouldNotTrip_whenThresholdNotReached(
+            TestParams params, Function<TestParams, CloseObserveStrategy> strategySupplier
+    ) throws InterruptedException {
+        CloseObserveStrategy strategy = strategySupplier.apply(params);
         Thread.sleep(params.observeStartTime().toMillis() + 10);
 
         for (int i = 0; i < 3; i++) {
@@ -83,12 +101,12 @@ public class WaitingTimeFixedTimeWindowErrorRateStrategyUnitTests {
     }
 
     @ParameterizedTest
-    @MethodSource("testConfig")
+    @MethodSource("arguments")
     @DisplayName("UT №3: should trip when time is sufficient and error rate reaches threshold")
-    public void shouldTrip_whenThresholdReached(TestParams params) throws InterruptedException {
-        WaitingTimeFixedTimeWindowErrorRateStrategy strategy = new WaitingTimeFixedTimeWindowErrorRateStrategy(
-                params.windowTime(), params.threshold(), params.observeStartTime()
-        );
+    public void shouldTrip_whenThresholdReached(
+            TestParams params, Function<TestParams, CloseObserveStrategy> strategySupplier
+    ) throws InterruptedException {
+        CloseObserveStrategy strategy = strategySupplier.apply(params);
         Thread.sleep(params.observeStartTime().toMillis() + 10);
 
         for (int i = 0; i < 2; i++) {
@@ -106,12 +124,12 @@ public class WaitingTimeFixedTimeWindowErrorRateStrategyUnitTests {
     }
 
     @ParameterizedTest
-    @MethodSource("testConfig")
+    @MethodSource("arguments")
     @DisplayName("UT №4: should reset state after time window expires")
-    public void shouldResetState_afterTimeWindowExpires(TestParams params) throws InterruptedException {
-        WaitingTimeFixedTimeWindowErrorRateStrategy strategy = new WaitingTimeFixedTimeWindowErrorRateStrategy(
-                params.windowTime(), params.threshold(), params.observeStartTime()
-        );
+    public void shouldResetState_afterTimeWindowExpires(
+            TestParams params, Function<TestParams, CloseObserveStrategy> strategySupplier
+    ) throws InterruptedException {
+        CloseObserveStrategy strategy = strategySupplier.apply(params);
         Thread.sleep(params.observeStartTime().toMillis() + 10);
 
         int exceptions = 3;
@@ -132,12 +150,12 @@ public class WaitingTimeFixedTimeWindowErrorRateStrategyUnitTests {
     }
 
     @ParameterizedTest
-    @MethodSource("testConfig")
+    @MethodSource("arguments")
     @DisplayName("UT №5: reset() method should clear state and shouldTrip should be false")
-    public void resetMethod_shouldClearState(TestParams params) throws InterruptedException {
-        WaitingTimeFixedTimeWindowErrorRateStrategy strategy = new WaitingTimeFixedTimeWindowErrorRateStrategy(
-                params.windowTime(), params.threshold(), params.observeStartTime()
-        );
+    public void resetMethod_shouldClearState(
+            TestParams params, Function<TestParams, CloseObserveStrategy> strategySupplier
+    ) throws InterruptedException {
+        CloseObserveStrategy strategy = strategySupplier.apply(params);
         Thread.sleep(params.observeStartTime().toMillis() + 10);
 
         int exceptions = 3;
@@ -159,19 +177,48 @@ public class WaitingTimeFixedTimeWindowErrorRateStrategyUnitTests {
         assertThat(strategy.shouldTrip()).isEqualTo(params.answers().get(5).get(3));
     }
 
-    @Test
+    @ParameterizedTest
+    @MethodSource("strategySuppliers")
     @DisplayName("should throw exception for null duration")
-    public void shouldThrowExceptionForNullDuration() {
-        assertThatThrownBy(() -> new WaitingTimeFixedTimeWindowErrorRateStrategy(null, 0.5, Duration.ofSeconds(1)))
+    public void shouldThrowExceptionForNullDuration(Function<TestParams, CloseObserveStrategy> strategySupplier) {
+        assertThatThrownBy(() -> strategySupplier.apply(new TestParams(null, 0.5, Duration.ZERO, Collections.emptyMap())))
                 .isInstanceOf(NullPointerException.class)
-                .hasMessage("cannot be null");
+                .hasMessage("observeTime cannot be null");
     }
 
-    @Test
+    @ParameterizedTest
+    @MethodSource("strategySuppliers")
     @DisplayName("should throw exception for negative threshold")
-    public void shouldThrowExceptionForNegativeThreshold() {
-        assertThatThrownBy(() -> new WaitingTimeFixedTimeWindowErrorRateStrategy(Duration.ofSeconds(1), -0.1, Duration.ofSeconds(1)))
+    public void shouldThrowExceptionForNegativeThreshold(Function<TestParams, CloseObserveStrategy> strategySupplier) {
+        assertThatThrownBy(() -> strategySupplier.apply(new TestParams(Duration.ofSeconds(1), -0.1, Duration.ZERO, Collections.emptyMap())))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("exceptionRateThreshold cannot be negative");
+                .hasMessage("exceptionRateThreshold must be >= 0");
+    }
+
+    @ParameterizedTest
+    @MethodSource("strategySuppliers")
+    @DisplayName("should throw exception for null observeStartTime")
+    public void shouldThrowExceptionForNullObserveStartTime(Function<TestParams, CloseObserveStrategy> strategySupplier) {
+        assertThatThrownBy(() -> strategySupplier.apply(new TestParams(Duration.ofSeconds(1), 0.5, null, Collections.emptyMap())))
+                .isInstanceOf(NullPointerException.class)
+                .hasMessage("waitBeforeStartTime cannot be null");
+    }
+
+    @ParameterizedTest
+    @MethodSource("strategySuppliers")
+    @DisplayName("should reset state when time window expires on request")
+    public void shouldResetStateWhenTimeWindowExpiresOnRequest(Function<TestParams, CloseObserveStrategy> strategySupplier) throws InterruptedException {
+        // We need specific params for this test
+        TestParams params = new TestParams(Duration.ofMillis(100), 0.5, Duration.ZERO, Collections.emptyMap());
+        CloseObserveStrategy strategy = strategySupplier.apply(params);
+
+        strategy.onRequest();
+        strategy.onException();
+        assertThat(strategy.shouldTrip()).isTrue();
+
+        Thread.sleep(params.windowTime().toMillis() + 50);
+
+        strategy.onRequest();
+        assertThat(strategy.shouldTrip()).isFalse();
     }
 }

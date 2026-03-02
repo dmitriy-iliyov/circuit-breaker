@@ -1,4 +1,4 @@
-package io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.lock.half_open;
+package io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies;
 
 /**
  * Possible transitions from the HALF_OPEN state.

@@ -1,5 +1,7 @@
 package io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.lock.close;
 
+import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.CloseObserveStrategy;
+
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -18,12 +20,12 @@ public class SimpleMovingWindowStrategy implements CloseObserveStrategy {
     private final Lock lock = new ReentrantLock();
 
     public SimpleMovingWindowStrategy(int windowSize, double exceptionRateThreshold) {
-        if (windowSize < 0) {
-            throw new IllegalArgumentException("windowSize cannot be negative");
+        if (windowSize <= 0) {
+            throw new IllegalArgumentException("windowSize must be > 0");
         }
         this.windowSize = windowSize;
         if (exceptionRateThreshold < 0) {
-            throw new IllegalArgumentException("exceptionRateThreshold cannot be negative");
+            throw new IllegalArgumentException("exceptionRateThreshold must be >= 0");
         }
         this.exceptionCountThreshold = (int) Math.ceil(windowSize * exceptionRateThreshold);
         this.window = new int[windowSize];
@@ -34,12 +36,12 @@ public class SimpleMovingWindowStrategy implements CloseObserveStrategy {
 
     @Override
     public void onRequest() {
-        updateWindow(0);
+        moveWindow(0);
     }
 
     @Override
     public void onException() {
-        updateWindow(1);
+        moveWindow(1);
     }
 
     @Override
@@ -47,7 +49,7 @@ public class SimpleMovingWindowStrategy implements CloseObserveStrategy {
         return shouldTrip;
     }
 
-    private void updateWindow(int value) {
+    private void moveWindow(int value) {
         lock.lock();
         try {
             windowSum -= window[index];
