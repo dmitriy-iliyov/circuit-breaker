@@ -1,7 +1,6 @@
 package io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.close;
 
 import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.CloseObserveStrategy;
-import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.lock.close.FixedTimeWindowErrorCountStrategy;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -23,12 +22,19 @@ public class FixedTimeWindowErrorCountStrategyUnitTests {
             int threshold,
             long exceptionallyRequestCount,
             long successRequestCount,
+            Duration waitBeforeStartTime,
             Map<Integer, Map<Integer, Boolean>> answers
     ) {
         public static TestParams of(Duration windowTime, int threshold, Map<Integer, Map<Integer, Boolean>> answers) {
             long exceptionallyRequestCount = threshold;
             long successRequestCount = 10;
-            return new TestParams(windowTime, threshold, exceptionallyRequestCount, successRequestCount, answers);
+            return new TestParams(windowTime, threshold, exceptionallyRequestCount, successRequestCount, Duration.ZERO, answers);
+        }
+
+        public static TestParams of(Duration windowTime, int threshold, Duration waitBeforeStartTime, Map<Integer, Map<Integer, Boolean>> answers) {
+            long exceptionallyRequestCount = threshold;
+            long successRequestCount = 10;
+            return new TestParams(windowTime, threshold, exceptionallyRequestCount, successRequestCount, waitBeforeStartTime, answers);
         }
     }
 
@@ -61,7 +67,7 @@ public class FixedTimeWindowErrorCountStrategyUnitTests {
     static Stream<Function<TestParams, CloseObserveStrategy>> strategySuppliers() {
         return Stream.of(
                 testParams -> new FixedTimeWindowErrorCountStrategy(
-                        testParams.windowTime(), testParams.threshold(), Duration.ZERO
+                        testParams.windowTime(), testParams.threshold(), testParams.waitBeforeStartTime()
                 )
         );
     }
@@ -213,15 +219,13 @@ public class FixedTimeWindowErrorCountStrategyUnitTests {
     @MethodSource("strategySuppliers")
     @DisplayName("should ignore requests before observe start time")
     public void shouldIgnoreRequestsBeforeObserveStartTime(Function<TestParams, CloseObserveStrategy> strategySupplier) throws InterruptedException {
-        Duration observeStartTime = Duration.ofMillis(200);
-        FixedTimeWindowErrorCountStrategy strategy = new FixedTimeWindowErrorCountStrategy(
-                Duration.ofMillis(100), 1, observeStartTime
-        );
+        TestParams params = TestParams.of(Duration.ofMillis(100), 1, Duration.ofMillis(200), Collections.emptyMap());
+        CloseObserveStrategy strategy = strategySupplier.apply(params);
         
         strategy.onException();
         assertThat(strategy.shouldTrip()).isFalse();
         
-        Thread.sleep(observeStartTime.toMillis() + 50);
+        Thread.sleep(params.waitBeforeStartTime().toMillis() + 50);
         
         strategy.onException();
         assertThat(strategy.shouldTrip()).isTrue();

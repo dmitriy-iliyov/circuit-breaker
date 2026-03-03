@@ -11,7 +11,7 @@ import java.util.stream.Stream;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-public class SlidingWindowStrategyUnitTests {
+public class SlidingRequestWindowStrategyUnitTests {
 
     public record TestParams(
             int windowSize,
@@ -76,7 +76,7 @@ public class SlidingWindowStrategyUnitTests {
     @MethodSource("testParams")
     @DisplayName("UT №1: all requests without exceptions should result in shouldTrip being false")
     public void allRequestWithoutExceptions_shouldTripShouldBeFalse(TestParams params) {
-        SlidingWindowStrategy strategy = new SlidingWindowStrategy(
+        SlidingRequestWindowStrategy strategy = new SlidingRequestWindowStrategy(
                 params.windowSize(), params.threshold()
         );
         for (int i = 0; i < params.windowSize; i++) {
@@ -89,7 +89,7 @@ public class SlidingWindowStrategyUnitTests {
     @MethodSource("testParams")
     @DisplayName("UT №2: exception frequency threshold not reached should result in shouldTrip being false")
     public void exceptionFrequencyThresholdNotReached_shouldTripShouldBeFalse(TestParams params) {
-        SlidingWindowStrategy strategy = new SlidingWindowStrategy(
+        SlidingRequestWindowStrategy strategy = new SlidingRequestWindowStrategy(
                 params.windowSize(), params.threshold()
         );
         
@@ -113,7 +113,7 @@ public class SlidingWindowStrategyUnitTests {
     @MethodSource("testParams")
     @DisplayName("UT №3: exception frequency threshold reached should result in shouldTrip being true")
     public void exceptionFrequencyThresholdReached_shouldTripShouldBeTrue(TestParams params) {
-        SlidingWindowStrategy strategy = new SlidingWindowStrategy(
+        SlidingRequestWindowStrategy strategy = new SlidingRequestWindowStrategy(
                 params.windowSize(), params.threshold()
         );
         for (int i = 0; i < params.successRequestCount(); i++) {
@@ -129,7 +129,7 @@ public class SlidingWindowStrategyUnitTests {
     @MethodSource("testParams")
     @DisplayName("UT №4: one success round followed by another success round should result in shouldTrip being false")
     public void oneSuccessRound_shouldTripShouldBeFalse(TestParams params) {
-        SlidingWindowStrategy strategy = new SlidingWindowStrategy(
+        SlidingRequestWindowStrategy strategy = new SlidingRequestWindowStrategy(
                 params.windowSize(), params.threshold()
         );
         for (int i = 0; i < params.windowSize(); i++) {
@@ -147,7 +147,7 @@ public class SlidingWindowStrategyUnitTests {
     @MethodSource("testParams")
     @DisplayName("UT №5: reset should clear state and shouldTrip should be false")
     public void reset_shouldClearStateAndShouldTripShouldBeFalse(TestParams params) {
-        SlidingWindowStrategy strategy = new SlidingWindowStrategy(
+        SlidingRequestWindowStrategy strategy = new SlidingRequestWindowStrategy(
                 params.windowSize(), params.threshold()
         );
         for (int i = 0; i < params.successRequestCount(); i++) {
@@ -169,7 +169,7 @@ public class SlidingWindowStrategyUnitTests {
     @Test
     @DisplayName("should throw exception for negative window size")
     public void shouldThrowExceptionForNegativeWindowSize() {
-        assertThatThrownBy(() -> new SlidingWindowStrategy(-1, 0.5))
+        assertThatThrownBy(() -> new SlidingRequestWindowStrategy(-1, 0.5))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("windowSize must be > 0");
     }
@@ -177,7 +177,7 @@ public class SlidingWindowStrategyUnitTests {
     @Test
     @DisplayName("should throw exception for negative threshold")
     public void shouldThrowExceptionForNegativeThreshold() {
-        assertThatThrownBy(() -> new SlidingWindowStrategy(10, -0.1))
+        assertThatThrownBy(() -> new SlidingRequestWindowStrategy(10, -0.1))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("exceptionRateThreshold must be >= 0");
     }

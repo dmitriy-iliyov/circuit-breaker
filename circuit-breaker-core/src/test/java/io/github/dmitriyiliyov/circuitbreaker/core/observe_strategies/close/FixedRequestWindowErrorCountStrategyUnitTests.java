@@ -1,7 +1,6 @@
 package io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.close;
 
 import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.CloseObserveStrategy;
-import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.lock.close.FixedRequestWindowErrorCountStrategy;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -23,16 +22,23 @@ public class FixedRequestWindowErrorCountStrategyUnitTests {
             int threshold,
             long exceptionallyRequestCount,
             long successRequestCount,
-            Map<Integer, Map<Integer, Boolean>> answers
+            Map<Integer, Map<Integer, Boolean>> answers,
+            Duration waitBeforeStartTime
     ) {
         public static TestParams of(int windowSize, int threshold, Map<Integer, Map<Integer, Boolean>> answers) {
             long exceptionallyRequestCount = threshold;
             long successRequestCount = windowSize - exceptionallyRequestCount;
-            return new TestParams(windowSize, threshold, exceptionallyRequestCount, successRequestCount, answers);
+            return new TestParams(windowSize, threshold, exceptionallyRequestCount, successRequestCount, answers, Duration.ZERO);
+        }
+
+        public static TestParams of(int windowSize, int threshold, Map<Integer, Map<Integer, Boolean>> answers, Duration waitBeforeStartTime) {
+            long exceptionallyRequestCount = threshold;
+            long successRequestCount = windowSize - exceptionallyRequestCount;
+            return new TestParams(windowSize, threshold, exceptionallyRequestCount, successRequestCount, answers, waitBeforeStartTime);
         }
     }
 
-    static Stream<TestParams> testConfig() {
+    static Stream<TestParams> testParams() {
         Map<Integer, Map<Integer, Boolean>> commonAnswersForThresholdGreaterThanOne = Map.of(
                 1, Map.of(1, false),
                 2, Map.of(1, false),
@@ -54,6 +60,18 @@ public class FixedRequestWindowErrorCountStrategyUnitTests {
         );
 
         return Stream.of(
+                TestParams.of(
+                        10, 0,
+                        Map.of(
+                                1, Map.of(1, false),
+                                2, Map.of(1, true),
+                                3, Map.of(1, false),
+                                4, Map.of(1, false, 2, false),
+                                5,  Map.of(1, false, 2, false, 3, true),
+                                6,  Map.of(1, false, 2, false, 3, true),
+                                7,  Map.of(1, false, 2, true)
+                        )
+                ),
                 TestParams.of(10, 2, commonAnswersForThresholdGreaterThanOne),
                 TestParams.of(5, 1, answersForThresholdOne),
                 TestParams.of(20, 5, commonAnswersForThresholdGreaterThanOne),
@@ -65,15 +83,16 @@ public class FixedRequestWindowErrorCountStrategyUnitTests {
     static Stream<Function<TestParams, CloseObserveStrategy>> strategySuppliers() {
         return Stream.of(
                 testParams -> new FixedRequestWindowErrorCountStrategy(
-                        testParams.windowSize(), testParams.threshold(), Duration.ZERO
+                        testParams.windowSize(), testParams.threshold(), testParams.waitBeforeStartTime()
                 ),
-                testParams -> new io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.lock_free.close.
-                        FixedRequestWindowErrorCountStrategy(testParams.windowSize(), testParams.threshold(), Duration.ZERO)
+                testParams -> new LockFreeFixedRequestWindowErrorCountStrategy(
+                        testParams.windowSize(), testParams.threshold(), testParams.waitBeforeStartTime()
+                )
         );
     }
 
     static Stream<Arguments> arguments() {
-        return testConfig().flatMap(params -> strategySuppliers()
+        return testParams().flatMap(params -> strategySuppliers()
                 .map(supplier -> Arguments.of(params, supplier))
         );
     }
@@ -213,7 +232,7 @@ public class FixedRequestWindowErrorCountStrategyUnitTests {
     @MethodSource("strategySuppliers")
     @DisplayName("should throw exception for negative window size")
     public void shouldThrowExceptionForNegativeWindowSize(Function<TestParams, CloseObserveStrategy> strategySupplier) {
-        assertThatThrownBy(() -> strategySupplier.apply(new TestParams(-1, 5, 0, 0, Collections.emptyMap())))
+        assertThatThrownBy(() -> strategySupplier.apply(new TestParams(-1, 5, 0, 0, Collections.emptyMap(), Duration.ZERO)))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("windowSize must be > 0");
     }
@@ -222,27 +241,26 @@ public class FixedRequestWindowErrorCountStrategyUnitTests {
     @MethodSource("strategySuppliers")
     @DisplayName("should throw exception for negative threshold")
     public void shouldThrowExceptionForNegativeThreshold(Function<TestParams, CloseObserveStrategy> strategySupplier) {
-        assertThatThrownBy(() -> strategySupplier.apply(new TestParams(10, -1, 0, 0, Collections.emptyMap())))
+        assertThatThrownBy(() -> strategySupplier.apply(new TestParams(10, -1, 0, 0, Collections.emptyMap(), Duration.ZERO)))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("exceptionCountThreshold must be >= 0");
     }
-    
+
     @ParameterizedTest
     @MethodSource("strategySuppliers")
-    @DisplayName("should ignore requests before observe start time")
-    public void shouldIgnoreRequestsBeforeObserveStartTime(Function<TestParams, CloseObserveStrategy> strategySupplier) throws InterruptedException {
-        Duration observeStartTime = Duration.ofMillis(200);
-        
-        FixedRequestWindowErrorCountStrategy strategy = new FixedRequestWindowErrorCountStrategy(
-                10, 1, observeStartTime
-        );
-        
+    @DisplayName("should ignore exceptions before observe start time")
+    public void shouldIgnoreExceptionsBeforeObserveStartTime(Function<TestParams, CloseObserveStrategy> strategySupplier) throws InterruptedException {
+        TestParams params = TestParams.of(10, 1, Collections.emptyMap(), Duration.ofSeconds(1));
+        CloseObserveStrategy strategy = strategySupplier.apply(params);
+
         strategy.onException();
+
         assertThat(strategy.shouldTrip()).isFalse();
-        
-        Thread.sleep(observeStartTime.toMillis() + 50);
-        
+
+        Thread.sleep(params.waitBeforeStartTime().toMillis() + 500);
+
         strategy.onException();
+
         assertThat(strategy.shouldTrip()).isTrue();
     }
 }

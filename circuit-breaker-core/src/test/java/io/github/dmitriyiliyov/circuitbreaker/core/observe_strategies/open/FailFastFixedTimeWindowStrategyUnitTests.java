@@ -1,7 +1,6 @@
 package io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.open;
 
 import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.OpenObserveStrategy;
-import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.lock.open.FailFastFixedTimeWindowStrategy;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -43,8 +42,6 @@ public class FailFastFixedTimeWindowStrategyUnitTests {
 
     static Stream<Function<TestParams, OpenObserveStrategy>> strategySuppliers() {
         return Stream.of(
-                testParams -> new io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.lock_free.open.
-                        FailFastFixedTimeWindowStrategy(testParams.windowTime()),
                 testParams -> new FailFastFixedTimeWindowStrategy(testParams.windowTime())
         );
     }

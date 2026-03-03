@@ -2,7 +2,6 @@ package io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.half_open
 
 import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.HalfOpenObserveStrategy;
 import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.HalfOpenTransition;
-import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.lock.half_open.FixedRequestWindowErrorCountStrategy;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -52,8 +51,7 @@ public class FixedRequestWindowErrorCountStrategyUnitTests {
     static Stream<Function<TestParams, HalfOpenObserveStrategy>> strategySuppliers() {
         return Stream.of(
                 testParams -> new FixedRequestWindowErrorCountStrategy(testParams.windowSize(), testParams.threshold()),
-                testParams -> new io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.lock_free.half_open.
-                        FixedRequestWindowErrorCountStrategy(testParams.windowSize(), testParams.threshold())
+                testParams -> new LockFreeFixedRequestWindowErrorCountStrategy(testParams.windowSize(), testParams.threshold())
         );
     }
 

@@ -1,7 +1,6 @@
 package io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.close;
 
 import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.CloseObserveStrategy;
-import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.lock.close.FixedTimeWindowErrorRateStrategy;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -21,15 +20,15 @@ public class FixedTimeWindowErrorRateStrategyUnitTests {
     public record TestParams(
             Duration windowTime,
             double threshold,
-            Duration observeStartTime,
+            Duration waitBeforeStartTime,
             Map<Integer, Map<Integer, Boolean>> answers
     ) {
-        public static TestParams of(Duration windowTime, double threshold, Duration observeStartTime, Map<Integer, Map<Integer, Boolean>> answers) {
-            return new TestParams(windowTime, threshold, observeStartTime, answers);
+        public static TestParams of(Duration windowTime, double threshold, Duration waitBeforeStartTime, Map<Integer, Map<Integer, Boolean>> answers) {
+            return new TestParams(windowTime, threshold, waitBeforeStartTime, answers);
         }
     }
 
-    static Stream<TestParams> testConfig() {
+    static Stream<TestParams> testParams() {
         Map<Integer, Map<Integer, Boolean>> commonAnswers = Map.of(
                 1, Map.of(1, false),
                 2, Map.of(1, false),
@@ -48,13 +47,13 @@ public class FixedTimeWindowErrorRateStrategyUnitTests {
     static Stream<Function<TestParams, CloseObserveStrategy>> strategySuppliers() {
         return Stream.of(
                 testParams -> new FixedTimeWindowErrorRateStrategy(
-                        testParams.windowTime(), testParams.threshold(), testParams.observeStartTime()
+                        testParams.windowTime(), testParams.threshold(), testParams.waitBeforeStartTime()
                 )
         );
     }
 
     static Stream<Arguments> arguments() {
-        return testConfig().flatMap(params -> strategySuppliers()
+        return testParams().flatMap(params -> strategySuppliers()
                 .map(supplier -> Arguments.of(params, supplier))
         );
     }
@@ -83,7 +82,7 @@ public class FixedTimeWindowErrorRateStrategyUnitTests {
             TestParams params, Function<TestParams, CloseObserveStrategy> strategySupplier
     ) throws InterruptedException {
         CloseObserveStrategy strategy = strategySupplier.apply(params);
-        Thread.sleep(params.observeStartTime().toMillis() + 10);
+        Thread.sleep(params.waitBeforeStartTime().toMillis() + 10);
 
         for (int i = 0; i < 3; i++) {
             strategy.onRequest();
@@ -107,7 +106,7 @@ public class FixedTimeWindowErrorRateStrategyUnitTests {
             TestParams params, Function<TestParams, CloseObserveStrategy> strategySupplier
     ) throws InterruptedException {
         CloseObserveStrategy strategy = strategySupplier.apply(params);
-        Thread.sleep(params.observeStartTime().toMillis() + 10);
+        Thread.sleep(params.waitBeforeStartTime().toMillis() + 10);
 
         for (int i = 0; i < 2; i++) {
             strategy.onRequest();
@@ -130,7 +129,7 @@ public class FixedTimeWindowErrorRateStrategyUnitTests {
             TestParams params, Function<TestParams, CloseObserveStrategy> strategySupplier
     ) throws InterruptedException {
         CloseObserveStrategy strategy = strategySupplier.apply(params);
-        Thread.sleep(params.observeStartTime().toMillis() + 10);
+        Thread.sleep(params.waitBeforeStartTime().toMillis() + 10);
 
         int exceptions = 3;
         if (params.threshold() > 0.6) exceptions = 10;
@@ -156,7 +155,7 @@ public class FixedTimeWindowErrorRateStrategyUnitTests {
             TestParams params, Function<TestParams, CloseObserveStrategy> strategySupplier
     ) throws InterruptedException {
         CloseObserveStrategy strategy = strategySupplier.apply(params);
-        Thread.sleep(params.observeStartTime().toMillis() + 10);
+        Thread.sleep(params.waitBeforeStartTime().toMillis() + 10);
 
         int exceptions = 3;
         if (params.threshold() > 0.6) exceptions = 10;
@@ -219,6 +218,29 @@ public class FixedTimeWindowErrorRateStrategyUnitTests {
         Thread.sleep(params.windowTime().toMillis() + 50);
 
         strategy.onRequest();
+        assertThat(strategy.shouldTrip()).isFalse();
+    }
+    
+    @ParameterizedTest
+    @MethodSource("strategySuppliers")
+    @DisplayName("should ignore requests before observe start time")
+    public void shouldIgnoreRequestsBeforeObserveStartTime(
+            Function<TestParams, CloseObserveStrategy> strategySupplier
+    ) throws InterruptedException {
+        TestParams params = TestParams.of(Duration.ofMillis(200), 0.5, Duration.ofMillis(100), Collections.emptyMap());
+        CloseObserveStrategy strategy = strategySupplier.apply(params);
+        
+        // Подаем нагрузку, которая должна вызвать срабатывание
+        for(int i=0; i<10; i++) {
+             strategy.onException();
+        }
+        
+        assertThat(strategy.shouldTrip()).isFalse();
+        
+        // Ждем
+        Thread.sleep(params.waitBeforeStartTime().toMillis() + 50);
+        
+        // Проверяем, что после ожидания стратегия готова к работе (но не сработала от старых ошибок)
         assertThat(strategy.shouldTrip()).isFalse();
     }
 }
