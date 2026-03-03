@@ -14,44 +14,23 @@ public class FailFastFixedTimeWindowStrategy implements OpenObserveStrategy {
 
     private final long observeMillis;
     private volatile long observeEndMillis;
-    private volatile boolean shouldTrip;
-    private final Lock lock = new ReentrantLock();
 
     public FailFastFixedTimeWindowStrategy(Duration observeTime) {
         Objects.requireNonNull(observeTime, "observeTime cannot be null");
         this.observeMillis = observeTime.toMillis();
-        this.shouldTrip = false;
         this.observeEndMillis = System.currentTimeMillis() + observeMillis;
     }
 
     @Override
-    public void onRequest() {
-        long currentMillis = System.currentTimeMillis();
-        if (currentMillis > observeEndMillis) {
-            lock.lock();
-            try {
-                if (currentMillis > observeEndMillis) {
-                    shouldTrip = true;
-                }
-            } finally {
-                lock.unlock();
-            }
-        }
-    }
+    public void onRequest() { }
 
     @Override
     public boolean shouldTrip() {
-        return shouldTrip;
+        return System.currentTimeMillis() >= observeEndMillis;
     }
 
     @Override
     public void reset() {
-        lock.lock();
-        try {
-            observeEndMillis = System.currentTimeMillis() + observeMillis;
-            shouldTrip = false;
-        } finally {
-            lock.unlock();
-        }
+        observeEndMillis = System.currentTimeMillis() + observeMillis;
     }
 }

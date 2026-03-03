@@ -14,6 +14,8 @@ public interface CircuitBreaker extends CircuitState {
      */
     Set<Class<? extends Throwable>> getObservableExceptions();
 
+    Set<Class<? extends Throwable>> getIgnorableExceptions();
+
     /**
      * Attempts to transition the CircuitBreaker state from {@code previousState} to {@code nextState}.
      * This method is thread-safe.

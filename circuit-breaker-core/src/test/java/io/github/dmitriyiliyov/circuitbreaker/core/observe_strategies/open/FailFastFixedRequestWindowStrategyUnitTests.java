@@ -1,7 +1,6 @@
 package io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.open;
 
 import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.OpenObserveStrategy;
-import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.lock.open.FailFastFixedRequestWindowStrategy;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -15,7 +14,7 @@ import java.util.stream.Stream;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-public class FailFastFixedRequestWindowStrategyUnitTests {
+public class LockFreeFailFastFixedRequestWindowStrategyUnitTests {
 
     public record TestParams(
             int windowSize,
@@ -44,8 +43,7 @@ public class FailFastFixedRequestWindowStrategyUnitTests {
     static Stream<Function<TestParams, OpenObserveStrategy>> strategySuppliers() {
         return Stream.of(
                 testParams -> new FailFastFixedRequestWindowStrategy(testParams.windowSize()),
-                testParams -> new io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.lock_free.open.
-                        FailFastFixedRequestWindowStrategy(testParams.windowSize())
+                testParams -> new LockFreeFailFastFixedRequestWindowStrategy(testParams.windowSize())
         );
     }
 

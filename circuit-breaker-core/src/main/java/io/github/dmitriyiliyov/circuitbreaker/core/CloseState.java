@@ -1,6 +1,6 @@
 package io.github.dmitriyiliyov.circuitbreaker.core;
 
-import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.lock.close.CloseObserveStrategy;
+import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.CloseObserveStrategy;
 
 import java.util.Objects;
 import java.util.function.Function;

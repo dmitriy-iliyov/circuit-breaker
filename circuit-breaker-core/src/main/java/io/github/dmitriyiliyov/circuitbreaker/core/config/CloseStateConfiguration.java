@@ -10,11 +10,11 @@ public final class CloseStateConfiguration {
     private final Integer windowSize;
     private final Double exceptionRateThreshold;
     private final Integer exceptionCountThreshold;
-    private final Duration waitTimeBeforeStart;
+    private final Duration waitBeforeStartTime;
 
     private CloseStateConfiguration(WindowType windowType, Duration observeTime, Integer windowSize,
                                     Double exceptionRateThreshold, Integer exceptionCountThreshold,
-                                    Duration waitTimeBeforeStart) {
+                                    Duration waitBeforeStartTime) {
         this.windowType = Objects.requireNonNull(windowType, "windowType cannot be null");
         if (observeTime == null && windowSize == null) {
             throw new IllegalArgumentException("either observeTime or windowSize must be provided");
@@ -32,10 +32,10 @@ public final class CloseStateConfiguration {
         }
         this.exceptionRateThreshold = exceptionRateThreshold;
         this.exceptionCountThreshold = exceptionCountThreshold;
-        if (waitTimeBeforeStart == null && WindowType.FIXED.equals(windowType)) {
-            throw new IllegalArgumentException("waitTimeBeforeStart cannot be null");
+        if (waitBeforeStartTime == null && WindowType.FIXED.equals(windowType)) {
+            throw new IllegalArgumentException("waitBeforeStartTime cannot be null");
         }
-        this.waitTimeBeforeStart = waitTimeBeforeStart;
+        this.waitBeforeStartTime = waitBeforeStartTime;
     }
 
     public static Builder builder() {
@@ -62,8 +62,8 @@ public final class CloseStateConfiguration {
         return exceptionCountThreshold;
     }
 
-    public Duration getWaitTimeBeforeStart() {
-        return waitTimeBeforeStart;
+    public Duration getWaitBeforeStartTime() {
+        return waitBeforeStartTime;
     }
 
     public static class Builder {
@@ -73,7 +73,7 @@ public final class CloseStateConfiguration {
         private Integer windowSize;
         private Double exceptionRateThreshold;
         private Integer exceptionCountThreshold;
-        private Duration waitTimeBeforeStart;
+        private Duration waitBeforeStartTime;
 
         public Builder windowMoveType(WindowType windowType) {
             this.windowType = windowType;
@@ -101,7 +101,7 @@ public final class CloseStateConfiguration {
         }
 
         public Builder observeStartTime(Duration observeStartTime) {
-            this.waitTimeBeforeStart = observeStartTime;
+            this.waitBeforeStartTime = observeStartTime;
             return this;
         }
 
@@ -112,7 +112,7 @@ public final class CloseStateConfiguration {
                     windowSize,
                     exceptionRateThreshold,
                     exceptionCountThreshold,
-                    waitTimeBeforeStart
+                    waitBeforeStartTime
             );
         }
     }

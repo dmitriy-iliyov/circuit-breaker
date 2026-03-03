@@ -2,6 +2,7 @@ package io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.lock.open
 
 import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.OpenObserveStrategy;
 
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -11,8 +12,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public class FailFastFixedRequestWindowStrategy implements OpenObserveStrategy {
 
     private final int windowSize;
-    private volatile boolean shouldTrip;
-    private int requestCount;
+    private final AtomicInteger requestCount;
     private final Lock lock = new ReentrantLock();
 
     public FailFastFixedRequestWindowStrategy(int windowSize) {
@@ -20,33 +20,24 @@ public class FailFastFixedRequestWindowStrategy implements OpenObserveStrategy {
             throw new IllegalArgumentException("windowSize must be > 0");
         }
         this.windowSize = windowSize;
-        this.shouldTrip = false;
+        this.requestCount = new AtomicInteger(0);
     }
 
     @Override
     public void onRequest() {
-        lock.lock();
-        try {
-            requestCount++;
-            if (requestCount >= windowSize) {
-                shouldTrip = true;
-            }
-        } finally {
-            lock.unlock();
-        }
+        requestCount.incrementAndGet();
     }
 
     @Override
     public boolean shouldTrip() {
-        return shouldTrip;
+        return requestCount.get() >= windowSize;
     }
 
     @Override
     public void reset() {
         lock.lock();
         try {
-            requestCount = 0;
-            shouldTrip = false;
+            requestCount.set(0);
         } finally {
             lock.unlock();
         }

@@ -26,7 +26,7 @@ public class DefaultCircuitBreakerUnitTests {
         initialState = mock(CircuitState.class);
         nextState = mock(CircuitState.class);
         otherState = mock(CircuitState.class);
-        circuitBreaker = new DefaultCircuitBreaker(Collections.emptySet(), initialState);
+        circuitBreaker = new DefaultCircuitBreaker(Collections.emptySet(), Collections.emptySet(), initialState);
     }
 
     @Test

@@ -1,4 +1,4 @@
-package io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.lock.close;
+package io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.close;
 
 import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.CloseObserveStrategy;
 
@@ -9,7 +9,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * A {@link CloseObserveStrategy} that uses a sliding window to calculate the error rate.
  * The window is based on the last N requests.
  */
-public class SimpleMovingWindowStrategy implements CloseObserveStrategy {
+public class SlidingWindowStrategy implements CloseObserveStrategy {
 
     private final int windowSize;
     private final int exceptionCountThreshold;
@@ -19,7 +19,7 @@ public class SimpleMovingWindowStrategy implements CloseObserveStrategy {
     private volatile boolean shouldTrip;
     private final Lock lock = new ReentrantLock();
 
-    public SimpleMovingWindowStrategy(int windowSize, double exceptionRateThreshold) {
+    public SlidingWindowStrategy(int windowSize, double exceptionRateThreshold) {
         if (windowSize <= 0) {
             throw new IllegalArgumentException("windowSize must be > 0");
         }

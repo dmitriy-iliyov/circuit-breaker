@@ -11,5 +11,5 @@ public enum WindowType {
     /**
      * The window slides continuously, dropping old data as new data arrives.
      */
-    MOVING
+    SLIDING
 }

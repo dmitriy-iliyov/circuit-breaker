@@ -1,33 +1,42 @@
 package io.github.dmitriyiliyov.circuitbreaker.core;
 
+import io.github.dmitriyiliyov.circuitbreaker.core.config.ConfigurableCircuitBreaker;
+
 import java.util.Set;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
-public class DefaultCircuitBreaker implements CircuitBreaker {
+/**
+ * Default CircuitBreaker implementation.
+ */
+public class DefaultCircuitBreaker implements CircuitBreaker, ConfigurableCircuitBreaker {
 
     private final Set<Class<? extends Throwable>> observableExceptions;
-    private volatile CircuitState state;
-    private final Lock lock = new ReentrantLock();
+    private final Set<Class<? extends Throwable>> ignorableExceptions;
+    private AtomicReference<CircuitState> state;
 
-    public DefaultCircuitBreaker(Set<Class<? extends Throwable>> observableExceptions) {
+    public DefaultCircuitBreaker(Set<Class<? extends Throwable>> observableExceptions,
+                                 Set<Class<? extends Throwable>> ignorableExceptions) {
         this.observableExceptions = Set.copyOf(observableExceptions);
+        this.ignorableExceptions = Set.copyOf(ignorableExceptions);
     }
 
-    public DefaultCircuitBreaker(Set<Class<? extends Throwable>> observableExceptions, CircuitState state) {
+    public DefaultCircuitBreaker(Set<Class<? extends Throwable>> observableExceptions,
+                                 Set<Class<? extends Throwable>> ignorableExceptions,
+                                 CircuitState state) {
         this.observableExceptions = Set.copyOf(observableExceptions);
-        this.state = state;
+        this.ignorableExceptions = Set.copyOf(ignorableExceptions);
+        this.state = new AtomicReference<>(state);
     }
 
     @Override
     public void execute(Runnable process) {
-        state.execute(process);
+        state.get().execute(process);
     }
 
     @Override
     public <T> T execute(Supplier<T> process) {
-        return state.execute(process);
+        return state.get().execute(process);
     }
 
     @Override
@@ -36,25 +45,22 @@ public class DefaultCircuitBreaker implements CircuitBreaker {
     }
 
     @Override
-    public boolean trySetState(CircuitState previousState, CircuitState nextState) {
-        lock.lock();
-        try {
-            if (state.equals(previousState)) {
-                this.state = nextState;
-                return true;
-            }
-            return false;
-        } finally {
-            lock.unlock();
-        }
+    public Set<Class<? extends Throwable>> getIgnorableExceptions() {
+        return ignorableExceptions;
     }
 
+    @Override
+    public boolean trySetState(CircuitState previousState, CircuitState nextState) {
+        return state.compareAndSet(previousState, nextState);
+    }
+
+    @Override
     public void setState(CircuitState state) {
-        this.state = state;
+        this.state = new AtomicReference<>(state);
     }
 
     @Override
     public CircuitState getState() {
-        return state;
+        return state.get();
     }
 }

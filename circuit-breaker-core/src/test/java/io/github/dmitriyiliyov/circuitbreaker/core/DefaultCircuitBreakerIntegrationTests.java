@@ -1,15 +1,17 @@
 package io.github.dmitriyiliyov.circuitbreaker.core;
 
-import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.lock.close.CloseObserveStrategy;
-import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.lock.close.FixedRequestWindowErrorRateStrategy;
-import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.lock.half_open.FixedRequestWindowErrorCountStrategy;
-import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.lock.half_open.HalfOpenObserveStrategy;
-import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.lock.open.FailFastFixedRequestWindowStrategy;
-import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.lock.open.OpenObserveStrategy;
+import io.github.dmitriyiliyov.circuitbreaker.core.config.ConfigurableCircuitBreaker;
+import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.CloseObserveStrategy;
+import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.HalfOpenObserveStrategy;
+import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.OpenObserveStrategy;
+import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.close.FixedRequestWindowErrorRateStrategy;
+import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.half_open.FixedRequestWindowErrorCountStrategy;
+import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.open.FailFastFixedRequestWindowStrategy;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -20,7 +22,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class DefaultCircuitBreakerIntegrationTests {
 
     private final CircuitBreaker circuitBreaker = new DefaultCircuitBreaker(
-            Set.of(RuntimeException.class)
+            Set.of(RuntimeException.class),
+            Set.of(ArrayIndexOutOfBoundsException.class)
     );
 
     @BeforeEach
@@ -28,9 +31,9 @@ public class DefaultCircuitBreakerIntegrationTests {
         HalfOpenObserveStrategy halfOpenObserveStrategy = new FixedRequestWindowErrorCountStrategy(20, 2);
         HalfOpenState halfOpenState = new HalfOpenState(circuitBreaker, halfOpenObserveStrategy);
 
-        CloseObserveStrategy closeObserveStrategy = new FixedRequestWindowErrorRateStrategy(20, 0.2);
+        CloseObserveStrategy closeObserveStrategy = new FixedRequestWindowErrorRateStrategy(20, 0.2, Duration.ZERO);
         CircuitState closeState = new CloseState(circuitBreaker, halfOpenState, closeObserveStrategy);
-        ((DefaultCircuitBreaker) circuitBreaker).setState(closeState);
+        ((ConfigurableCircuitBreaker) circuitBreaker).setState(closeState);
 
         OpenObserveStrategy openObserveStrategy = new FailFastFixedRequestWindowStrategy(20);
         CircuitState openState = new OpenState(circuitBreaker, closeState, openObserveStrategy);
