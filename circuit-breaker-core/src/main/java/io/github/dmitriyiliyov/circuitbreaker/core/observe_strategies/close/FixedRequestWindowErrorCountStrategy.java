@@ -1,4 +1,4 @@
-package io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.lock.close;
+package io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.close;
 
 import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.CloseObserveStrategy;
 

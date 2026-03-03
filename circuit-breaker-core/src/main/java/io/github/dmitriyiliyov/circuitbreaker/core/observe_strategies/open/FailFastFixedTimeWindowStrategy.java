@@ -1,11 +1,9 @@
-package io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.lock.open;
+package io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.open;
 
 import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.OpenObserveStrategy;
 
 import java.time.Duration;
 import java.util.Objects;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * An {@link OpenObserveStrategy} that transitions to HALF_OPEN after a fixed time window.

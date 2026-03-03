@@ -1,4 +1,4 @@
-package io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.lock.open;
+package io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.open;
 
 import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.OpenObserveStrategy;
 
