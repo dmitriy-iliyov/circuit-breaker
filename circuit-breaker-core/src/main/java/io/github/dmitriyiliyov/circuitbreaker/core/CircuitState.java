@@ -1,7 +1,5 @@
 package io.github.dmitriyiliyov.circuitbreaker.core;
 
-import java.util.function.Supplier;
-
 /**
  * A CircuitBreaker state abstraction.
  */
@@ -13,8 +11,7 @@ public interface CircuitState {
      * @param process the process to execute
      * @throws        Throwable if the process throws an exception
      */
-    void execute(Runnable process);
-
+    void execute(CheckedRunnable process) throws Throwable;
 
     /**
      * Executes the given {@code process} within the context of this CircuitBreaker state.
@@ -24,5 +21,5 @@ public interface CircuitState {
      * @return        the return value of the process
      * @throws        Throwable if the process throws an exception
      */
-    <T> T execute(Supplier<T> process);
+    <T> T execute(CheckedSupplier<T> process) throws Throwable;
 }
