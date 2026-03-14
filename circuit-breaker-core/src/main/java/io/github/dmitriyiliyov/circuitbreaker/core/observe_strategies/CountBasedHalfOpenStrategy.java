@@ -1,35 +1,26 @@
-package io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.half_open;
-
-import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.HalfOpenObserveStrategy;
-import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.HalfOpenTransition;
+package io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies;
 
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * A {@link HalfOpenObserveStrategy} that uses a fixed request window to determine
+ * A {@link HalfOpenStateStrategy} that uses a fixed request window to determine
  * the transition from HALF_OPEN.
  * <p>
  * If the number of exceptions within the window exceeds a threshold, it transitions to OPEN.
  * If the window completes without exceeding the threshold, it transitions to CLOSED.
  */
-public class FixedRequestWindowErrorCountStrategy implements HalfOpenObserveStrategy {
+public class CountBasedHalfOpenStrategy implements HalfOpenStateStrategy {
 
     private final int windowSize;
-    private final long exceptionCountThreshold;
+    private final int exceptionCountThreshold;
     private int requestCount;
     private int exceptionCount;
     private volatile HalfOpenTransition transition;
     private final Lock lock = new ReentrantLock();
 
-    public FixedRequestWindowErrorCountStrategy(int windowSize, int exceptionCountThreshold) {
-        if (windowSize <= 0) {
-            throw new IllegalArgumentException("windowSize must be > 0");
-        }
+    public CountBasedHalfOpenStrategy(int windowSize, int exceptionCountThreshold) {
         this.windowSize = windowSize;
-        if (exceptionCountThreshold < 0) {
-            throw new IllegalArgumentException("exceptionCountThreshold must be >= 0");
-        }
         this.exceptionCountThreshold = exceptionCountThreshold;
         this.requestCount = 0;
         this.exceptionCount = 0;
@@ -37,7 +28,7 @@ public class FixedRequestWindowErrorCountStrategy implements HalfOpenObserveStra
     }
 
     @Override
-    public void onRequest() {
+    public void onSuccess() {
         lock.lock();
         try {
             requestCount++;
@@ -55,8 +46,9 @@ public class FixedRequestWindowErrorCountStrategy implements HalfOpenObserveStra
         try {
             requestCount++;
             exceptionCount++;
-            if (exceptionCount >= exceptionCountThreshold) {
+            if (HalfOpenTransition.NO_TRANSITION.equals(transition) && exceptionCount >= exceptionCountThreshold) {
                 transition = HalfOpenTransition.TO_OPEN;
+                return;
             }
             if (HalfOpenTransition.NO_TRANSITION.equals(transition) && requestCount >= windowSize) {
                 transition = HalfOpenTransition.TO_CLOSE;
@@ -70,7 +62,6 @@ public class FixedRequestWindowErrorCountStrategy implements HalfOpenObserveStra
     public HalfOpenTransition getTransition() {
         return transition;
     }
-
 
     @Override
     public void reset() {

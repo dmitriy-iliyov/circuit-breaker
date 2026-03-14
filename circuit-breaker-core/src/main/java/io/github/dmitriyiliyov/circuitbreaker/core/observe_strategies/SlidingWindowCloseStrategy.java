@@ -1,34 +1,29 @@
-package io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.close;
+package io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies;
 
-import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.CloseObserveStrategy;
-
+import java.time.Duration;
 import java.util.BitSet;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * A {@link CloseObserveStrategy} that uses a sliding window to calculate the error rate.
+ * A {@link CloseStateStrategy} that uses a sliding window to calculate the error rate.
  * The window is based on the last N requests.
  */
-public class SlidingRequestWindowStrategy implements CloseObserveStrategy {
+public class SlidingWindowCloseStrategy implements CloseStateStrategy {
 
     private final int windowSize;
     private final int exceptionCountThreshold;
+    private final long initialDelayMillis;
     private final BitSet window;
     private int index;
     private int windowSum;
     private volatile boolean shouldTrip;
     private final Lock lock = new ReentrantLock();
 
-    public SlidingRequestWindowStrategy(int windowSize, double exceptionRateThreshold) {
-        if (windowSize <= 0) {
-            throw new IllegalArgumentException("windowSize must be > 0");
-        }
+    public SlidingWindowCloseStrategy(int windowSize, int exceptionCountThreshold, Duration initialDelay) {
         this.windowSize = windowSize;
-        if (exceptionRateThreshold < 0) {
-            throw new IllegalArgumentException("exceptionRateThreshold must be >= 0");
-        }
-        this.exceptionCountThreshold = (int) Math.ceil(windowSize * exceptionRateThreshold);
+        this.exceptionCountThreshold = exceptionCountThreshold;
+        this.initialDelayMillis = System.currentTimeMillis() + initialDelay.toMillis();
         this.window = new BitSet(windowSize);
         this.index = 0;
         this.windowSum = 0;
@@ -36,12 +31,18 @@ public class SlidingRequestWindowStrategy implements CloseObserveStrategy {
     }
 
     @Override
-    public void onRequest() {
+    public void onSuccess() {
+        if (System.currentTimeMillis() < initialDelayMillis) {
+            return;
+        }
         moveWindow(0);
     }
 
     @Override
     public void onException() {
+        if (System.currentTimeMillis() < initialDelayMillis) {
+            return;
+        }
         moveWindow(1);
     }
 

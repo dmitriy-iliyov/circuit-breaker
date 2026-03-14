@@ -5,7 +5,7 @@ package io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies;
  * <p>
  * This strategy determines when the CircuitBreaker should transition from OPEN to HALF_OPEN.
  */
-public interface OpenObserveStrategy {
+public interface OpenStateStrategy {
 
     /**
      * Records a request attempt.
@@ -17,7 +17,7 @@ public interface OpenObserveStrategy {
      *
      * @return true if the CircuitBreaker should transition, false otherwise
      */
-    boolean shouldTrip();
+    boolean shouldTransition();
 
     /**
      * Resets the internal state of the strategy.

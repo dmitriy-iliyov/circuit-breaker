@@ -1,27 +1,18 @@
-package io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.half_open;
-
-import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.HalfOpenObserveStrategy;
-import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.HalfOpenTransition;
+package io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class LockFreeFixedRequestWindowErrorCountStrategy implements HalfOpenObserveStrategy {
+public class LockFreeCountBasedHalfOpenStrategy implements HalfOpenStateStrategy {
 
     private final int windowSize;
-    private final long exceptionCountThreshold;
+    private final int exceptionCountThreshold;
     private final AtomicReference<HalfOpenTransition> transition;
     private final AtomicInteger requestCount;
     private final AtomicInteger exceptionCount;
 
-    public LockFreeFixedRequestWindowErrorCountStrategy(int windowSize, int exceptionCountThreshold) {
-        if (windowSize <= 0) {
-            throw new IllegalArgumentException("windowSize must be > 0");
-        }
+    public LockFreeCountBasedHalfOpenStrategy(int windowSize, int exceptionCountThreshold) {
         this.windowSize = windowSize;
-        if (exceptionCountThreshold < 0) {
-            throw new IllegalArgumentException("exceptionCountThreshold must be >= 0");
-        }
         this.exceptionCountThreshold = exceptionCountThreshold;
         this.transition = new AtomicReference<>(HalfOpenTransition.NO_TRANSITION);
         this.requestCount = new AtomicInteger(0);
@@ -29,7 +20,7 @@ public class LockFreeFixedRequestWindowErrorCountStrategy implements HalfOpenObs
     }
 
     @Override
-    public void onRequest() {
+    public void onSuccess() {
         if (requestCount.incrementAndGet() >= windowSize) {
             transition.compareAndSet(HalfOpenTransition.NO_TRANSITION, HalfOpenTransition.TO_CLOSE);
         }

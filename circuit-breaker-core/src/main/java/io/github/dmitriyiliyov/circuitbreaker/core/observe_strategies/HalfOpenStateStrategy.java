@@ -5,12 +5,12 @@ package io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies;
  * <p>
  * This strategy determines whether the CircuitBreaker should transition to OPEN or CLOSED.
  */
-public interface HalfOpenObserveStrategy {
+public interface HalfOpenStateStrategy {
 
     /**
      * Records a successful request.
      */
-    void onRequest();
+    void onSuccess();
 
     /**
      * Records a failed request.
