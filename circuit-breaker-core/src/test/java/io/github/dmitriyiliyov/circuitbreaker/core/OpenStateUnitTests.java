@@ -1,92 +1,124 @@
 package io.github.dmitriyiliyov.circuitbreaker.core;
 
-import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.CircuitBreakerOpenException;
-import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.OpenObserveStrategy;
+import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.OpenStateStrategy;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.function.Supplier;
-
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-@ExtendWith(MockitoExtension.class)
-public class OpenStateUnitTests {
+class OpenStateUnitTests {
 
-    @Mock
-    CircuitBreaker circuitBreaker;
-
-    @Mock
-    CircuitState nextState;
-
-    @Mock
-    OpenObserveStrategy strategy;
-
-    OpenState openState;
+    private final CircuitBreaker circuitBreaker = mock(CircuitBreaker.class);
+    private final CircuitState nextState = mock(CircuitState.class);
+    private final OpenStateStrategy strategy = mock(OpenStateStrategy.class);
+    private final OpenState openState = new OpenState(circuitBreaker, nextState, strategy);
 
     @BeforeEach
-    public void setUp() {
-        openState = new OpenState(circuitBreaker, nextState, strategy);
+    void setUp() {
+        reset(circuitBreaker, nextState, strategy);
     }
 
     @Test
-    @DisplayName("UT: execute(Runnable) should throw CircuitBreakerOpenException and call strategy.onRequest()")
-    public void executeRunnable_shouldThrowExceptionAndCallOnRequest() {
-        assertThatThrownBy(() -> openState.execute(() -> {}))
+    @DisplayName("execute(supplier): should throw exceptionSupplier when transition is not allowed")
+    void supplier_execute_shouldThrowException_whenTransitionNotAllowed() {
+        when(strategy.shouldTransition()).thenReturn(false);
+
+        assertThatThrownBy(() -> openState.execute(() -> "result"))
                 .isInstanceOf(CircuitBreakerOpenException.class)
                 .hasMessage("Circuit breaker is open, request cannot be executed");
 
         verify(strategy).onRequest();
+        verify(strategy).shouldTransition();
+        verifyNoMoreInteractions(strategy);
+        verifyNoInteractions(circuitBreaker, nextState);
     }
 
     @Test
-    @DisplayName("UT: execute(Supplier) should throw CircuitBreakerOpenException and call strategy.onRequest()")
-    public void executeSupplier_shouldThrowExceptionAndCallOnRequest() {
-        assertThatThrownBy(() -> openState.execute((Supplier<String>) () -> "success"))
-                .isInstanceOf(CircuitBreakerOpenException.class)
-                .hasMessage("Circuit breaker is open, request cannot be executed");
-
-        verify(strategy).onRequest();
-    }
-
-    @Test
-    @DisplayName("UT: should switch state and reset strategy when shouldTrip returns true and trySetState succeeds")
-    public void shouldSwitchStateAndResetStrategy_whenShouldTripTrueAndSetStateSucceeds() {
-        when(strategy.shouldTrip()).thenReturn(true);
-        when(circuitBreaker.trySetState(openState, nextState)).thenReturn(true);
-
-        assertThrows(CircuitBreakerOpenException.class, () -> openState.execute(() -> {}));
-
-        verify(circuitBreaker).trySetState(openState, nextState);
-        verify(strategy).reset();
-    }
-
-    @Test
-    @DisplayName("UT: should NOT reset strategy when shouldTrip returns true but trySetState fails")
-    public void shouldNotResetStrategy_whenShouldTripTrueButSetStateFails() {
-        when(strategy.shouldTrip()).thenReturn(true);
+    @DisplayName("execute(supplier): should throw exceptionSupplier when state transition fails")
+    void supplier_execute_shouldThrowException_whenStateTransitionFails() {
+        when(strategy.shouldTransition()).thenReturn(true);
         when(circuitBreaker.trySetState(openState, nextState)).thenReturn(false);
 
-        assertThrows(CircuitBreakerOpenException.class, () -> openState.execute(() -> {}));
+        assertThatThrownBy(() -> openState.execute(() -> "result"))
+                .isInstanceOf(CircuitBreakerOpenException.class)
+                .hasMessage("Circuit breaker is open, request cannot be executed");
 
+        verify(strategy).onRequest();
+        verify(strategy).shouldTransition();
         verify(circuitBreaker).trySetState(openState, nextState);
-        verify(strategy, never()).reset();
+        verifyNoMoreInteractions(strategy, circuitBreaker);
+        verifyNoInteractions(nextState);
     }
 
     @Test
-    @DisplayName("UT: should NOT attempt to switch state when shouldTrip returns false")
-    public void shouldNotAttemptSwitchState_whenShouldTripFalse() {
-        when(strategy.shouldTrip()).thenReturn(false);
+    @DisplayName("execute(supplier): should execute process and return result on successful transition")
+    void supplier_execute_shouldExecuteAndReturnResult_onSuccessfulTransition() throws Throwable {
+        when(strategy.shouldTransition()).thenReturn(true);
+        when(circuitBreaker.trySetState(openState, nextState)).thenReturn(true);
 
-        assertThrows(CircuitBreakerOpenException.class, () -> openState.execute(() -> {}));
+        String result = openState.execute(() -> "successSupplier");
 
-        verify(circuitBreaker, never()).trySetState(any(), any());
-        verify(strategy, never()).reset();
+        assertThat(result).isEqualTo("successSupplier");
+        verify(strategy).onRequest();
+        verify(strategy).shouldTransition();
+        verify(circuitBreaker).trySetState(openState, nextState);
+        verify(strategy).reset();
+        verifyNoMoreInteractions(strategy, circuitBreaker);
+        verifyNoInteractions(nextState);
+    }
+
+    @Test
+    @DisplayName("execute(runnable): should throw exceptionSupplier when transition is not allowed")
+    void runnable_execute_shouldThrowException_whenTransitionNotAllowed() {
+        when(strategy.shouldTransition()).thenReturn(false);
+        CheckedRunnable process = mock(CheckedRunnable.class);
+
+        assertThatThrownBy(() -> openState.execute(process))
+                .isInstanceOf(CircuitBreakerOpenException.class)
+                .hasMessage("Circuit breaker is open, request cannot be executed");
+
+        verify(strategy).onRequest();
+        verify(strategy).shouldTransition();
+        verifyNoMoreInteractions(strategy);
+        verifyNoInteractions(circuitBreaker, nextState, process);
+    }
+
+    @Test
+    @DisplayName("execute(runnable): should throw exceptionSupplier when state transition fails")
+    void runnable_execute_shouldThrowException_whenStateTransitionFails() {
+        when(strategy.shouldTransition()).thenReturn(true);
+        when(circuitBreaker.trySetState(openState, nextState)).thenReturn(false);
+        CheckedRunnable process = mock(CheckedRunnable.class);
+
+        assertThatThrownBy(() -> openState.execute(process))
+                .isInstanceOf(CircuitBreakerOpenException.class)
+                .hasMessage("Circuit breaker is open, request cannot be executed");
+
+        verify(strategy).onRequest();
+        verify(strategy).shouldTransition();
+        verify(circuitBreaker).trySetState(openState, nextState);
+        verifyNoMoreInteractions(strategy, circuitBreaker);
+        verifyNoInteractions(nextState, process);
+    }
+
+    @Test
+    @DisplayName("execute(runnable): should execute process on successful transition")
+    void runnable_execute_shouldExecute_onSuccessfulTransition() throws Throwable {
+        when(strategy.shouldTransition()).thenReturn(true);
+        when(circuitBreaker.trySetState(openState, nextState)).thenReturn(true);
+        CheckedRunnable process = mock(CheckedRunnable.class);
+
+        openState.execute(process);
+
+        verify(process).run();
+        verify(strategy).onRequest();
+        verify(strategy).shouldTransition();
+        verify(circuitBreaker).trySetState(openState, nextState);
+        verify(strategy).reset();
+        verifyNoMoreInteractions(strategy, circuitBreaker, process);
+        verifyNoInteractions(nextState);
     }
 }

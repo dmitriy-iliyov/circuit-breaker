@@ -1,18 +1,14 @@
 package io.github.dmitriyiliyov.circuitbreaker.core;
 
-import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.HalfOpenObserveStrategy;
+import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.HalfOpenStateStrategy;
 import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.HalfOpenTransition;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.junit.jupiter.MockitoSettings;
-import org.mockito.quality.Strictness;
-
-import java.util.Set;
-import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -20,148 +16,198 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-@MockitoSettings(strictness = Strictness.LENIENT)
 public class HalfOpenStateUnitTests {
 
     @Mock
-    CircuitBreaker circuitBreaker;
+    private CircuitBreaker circuitBreaker;
 
     @Mock
-    CircuitState openState;
+    private CircuitState openState;
 
     @Mock
-    CircuitState closeState;
+    private CircuitState closeState;
 
     @Mock
-    HalfOpenObserveStrategy strategy;
+    private HalfOpenStateStrategy strategy;
 
-    HalfOpenState halfOpenState;
+    private HalfOpenState halfOpenState;
 
     @BeforeEach
-    public void setUp() {
-        when(circuitBreaker.getObservableExceptions()).thenReturn(Set.of(IllegalArgumentException.class));
-        halfOpenState = new HalfOpenState(circuitBreaker, openState, closeState, strategy);
+    void setUp() {
+        when(circuitBreaker.getChecker()).thenReturn(throwable -> throwable instanceof IllegalArgumentException);
     }
 
-    @Test
-    @DisplayName("UT: execute(Runnable) should call strategy.onRequest() on success")
-    public void executeRunnable_shouldCallOnRequest_onSuccess() {
-        halfOpenState.execute(() -> {});
+    @Nested
+    @DisplayName("Tests for execute and transition logic")
+    class ExecuteAndTransitionTests {
 
-        verify(strategy).onRequest();
-        verify(strategy, never()).onException();
+        @BeforeEach
+        void setUp() {
+            halfOpenState = new HalfOpenState(circuitBreaker, openState, closeState, strategy);
+        }
+
+        @Test
+        @DisplayName("UT: execute(CheckedRunnable) should call strategy.onSuccess() on successSupplier")
+        void executeRunnable_shouldCallOnSuccess_onSuccess() throws Throwable {
+            halfOpenState.execute(() -> {});
+            verify(strategy).onSuccess();
+            verify(strategy, never()).onException();
+        }
+
+        @Test
+        @DisplayName("UT: execute(CheckedRunnable) should call strategy.onException() when observable exceptionSupplier is thrown")
+        void executeRunnable_shouldCallOnException_whenObservableExceptionThrown() {
+            assertThatThrownBy(() -> halfOpenState.execute(() -> {
+                throw new IllegalArgumentException();
+            })).isInstanceOf(IllegalArgumentException.class);
+            verify(strategy).onException();
+            verify(strategy, never()).onSuccess();
+        }
+
+        @Test
+        @DisplayName("UT: execute(CheckedRunnable) should call strategy.onSuccess() when unobservable exceptionSupplier is thrown")
+        void executeRunnable_shouldCallOnSuccess_whenUnobservableExceptionThrown() {
+            assertThatThrownBy(() -> halfOpenState.execute(() -> {
+                throw new IllegalStateException("Not observable");
+            })).isInstanceOf(IllegalStateException.class);
+            verify(strategy).onSuccess();
+            verify(strategy, never()).onException();
+        }
+
+        @Test
+        @DisplayName("UT: execute(CheckedSupplier) should return value and call strategy.onSuccess() on successSupplier")
+        void executeSupplier_shouldReturnValueAndCallOnSuccess_onSuccess() throws Throwable {
+            String result = halfOpenState.execute(() -> "successSupplier");
+            assertThat(result).isEqualTo("successSupplier");
+            verify(strategy).onSuccess();
+            verify(strategy, never()).onException();
+        }
+
+        @Test
+        @DisplayName("UT: execute(CheckedSupplier) should call strategy.onException() when observable exceptionSupplier is thrown")
+        void executeSupplier_shouldCallOnException_whenObservableExceptionThrown() {
+            assertThatThrownBy(() -> halfOpenState.execute((CheckedSupplier<String>) () -> {
+                throw new IllegalArgumentException();
+            })).isInstanceOf(IllegalArgumentException.class);
+            verify(strategy).onException();
+            verify(strategy, never()).onSuccess();
+        }
+
+        @Test
+        @DisplayName("UT: execute(CheckedSupplier) should call strategy.onSuccess() when unobservable exceptionSupplier is thrown")
+        void executeSupplier_shouldCallOnSuccess_whenUnobservableExceptionThrown() {
+            assertThatThrownBy(() -> halfOpenState.execute((CheckedSupplier<String>) () -> {
+                throw new IllegalStateException("Not observable");
+            })).isInstanceOf(IllegalStateException.class);
+            verify(strategy).onSuccess();
+            verify(strategy, never()).onException();
+        }
+
+        @Test
+        @DisplayName("UT: should switch to OPEN state when transition is TO_OPEN and trySetState succeeds")
+        void shouldSwitchToOpenState_whenTransitionToOpenAndSetStateSucceeds() throws Throwable {
+            when(strategy.getTransition()).thenReturn(HalfOpenTransition.TO_OPEN);
+            when(circuitBreaker.trySetState(halfOpenState, openState)).thenReturn(true);
+            halfOpenState.execute(() -> {});
+            verify(circuitBreaker).trySetState(halfOpenState, openState);
+            verify(strategy).reset();
+        }
+
+        @Test
+        @DisplayName("UT: should switch to CLOSE state when transition is TO_CLOSE and trySetState succeeds")
+        void shouldSwitchToCloseState_whenTransitionToCloseAndSetStateSucceeds() throws Throwable {
+            when(strategy.getTransition()).thenReturn(HalfOpenTransition.TO_CLOSE);
+            when(circuitBreaker.trySetState(halfOpenState, closeState)).thenReturn(true);
+            halfOpenState.execute(() -> {});
+            verify(circuitBreaker).trySetState(halfOpenState, closeState);
+            verify(strategy).reset();
+        }
+
+        @Test
+        @DisplayName("UT: should NOT reset strategy when transition is TO_OPEN but trySetState fails")
+        void shouldNotResetStrategy_whenTransitionToOpenButSetStateFails() throws Throwable {
+            when(strategy.getTransition()).thenReturn(HalfOpenTransition.TO_OPEN);
+            when(circuitBreaker.trySetState(halfOpenState, openState)).thenReturn(false);
+            halfOpenState.execute(() -> {});
+            verify(circuitBreaker).trySetState(halfOpenState, openState);
+            verify(strategy, never()).reset();
+        }
+
+        @Test
+        @DisplayName("UT: should NOT reset strategy when transition is TO_CLOSE but trySetState fails")
+        void shouldNotResetStrategy_whenTransitionToCloseButSetStateFails() throws Throwable {
+            when(strategy.getTransition()).thenReturn(HalfOpenTransition.TO_CLOSE);
+            when(circuitBreaker.trySetState(halfOpenState, closeState)).thenReturn(false);
+            halfOpenState.execute(() -> {});
+            verify(circuitBreaker).trySetState(halfOpenState, closeState);
+            verify(strategy, never()).reset();
+        }
+
+        @Test
+        @DisplayName("UT: should NOT attempt to switch state when transition is NO_TRANSITION")
+        void shouldNotAttemptSwitchState_whenTransitionNoTransition() throws Throwable {
+            when(strategy.getTransition()).thenReturn(HalfOpenTransition.NO_TRANSITION);
+            halfOpenState.execute(() -> {});
+            verify(circuitBreaker, never()).trySetState(any(), any());
+            verify(strategy, never()).reset();
+        }
     }
 
-    @Test
-    @DisplayName("UT: execute(Runnable) should call strategy.onException() when observable exception is thrown")
-    public void executeRunnable_shouldCallOnException_whenObservableExceptionThrown() {
-        assertThatThrownBy(() -> halfOpenState.execute(() -> {
-            throw new IllegalArgumentException();
-        })).isInstanceOf(IllegalArgumentException.class);
+    @Nested
+    @DisplayName("Tests for setter logic")
+    class SetterTests {
 
-        verify(strategy).onException();
-        verify(strategy, never()).onRequest();
-    }
+        @BeforeEach
+        void setUp() {
+            halfOpenState = new HalfOpenState(circuitBreaker, strategy);
+        }
 
-    @Test
-    @DisplayName("UT: execute(Runnable) should call strategy.onRequest() when unobservable exception is thrown")
-    public void executeRunnable_shouldCallOnRequest_whenUnobservableExceptionThrown() {
-        assertThatThrownBy(() -> halfOpenState.execute(() -> {
-            throw new IllegalStateException("Not observable");
-        })).isInstanceOf(IllegalStateException.class);
+        @Test
+        @DisplayName("setCloseState should set state when not initialized")
+        void setCloseState_shouldSetState_whenNotInitialized() {
+            halfOpenState.setCloseState(closeState);
+            // No exceptionSupplier is a pass
+        }
 
-        verify(strategy).onRequest();
-        verify(strategy, never()).onException();
-    }
+        @Test
+        @DisplayName("setCloseState should throw NullPointerException when state is null")
+        void setCloseState_shouldThrowNPE_whenStateIsNull() {
+            assertThatThrownBy(() -> halfOpenState.setCloseState(null))
+                    .isInstanceOf(NullPointerException.class)
+                    .hasMessage("closeState cannot be null");
+        }
 
-    @Test
-    @DisplayName("UT: execute(Supplier) should return value and call strategy.onRequest() on success")
-    public void executeSupplier_shouldReturnValueAndCallOnRequest_onSuccess() {
-        String result = halfOpenState.execute(() -> "success");
+        @Test
+        @DisplayName("setCloseState should throw IllegalStateException when already initialized")
+        void setCloseState_shouldThrowIllegalState_whenAlreadyInitialized() {
+            halfOpenState.setCloseState(closeState);
+            assertThatThrownBy(() -> halfOpenState.setCloseState(mock(CircuitState.class)))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessage("cannot modify state with this method");
+        }
 
-        assertThat(result).isEqualTo("success");
-        verify(strategy).onRequest();
-        verify(strategy, never()).onException();
-    }
+        @Test
+        @DisplayName("setOpenState should set state when not initialized")
+        void setOpenState_shouldSetState_whenNotInitialized() {
+            halfOpenState.setOpenState(openState);
+            // No exceptionSupplier is a pass
+        }
 
-    @Test
-    @DisplayName("UT: execute(Supplier) should call strategy.onException() when observable exception is thrown")
-    public void executeSupplier_shouldCallOnException_whenObservableExceptionThrown() {
-        assertThatThrownBy(() -> halfOpenState.execute((Supplier<String>) () -> {
-            throw new IllegalArgumentException();
-        })).isInstanceOf(IllegalArgumentException.class);
+        @Test
+        @DisplayName("setOpenState should throw NullPointerException when state is null")
+        void setOpenState_shouldThrowNPE_whenStateIsNull() {
+            assertThatThrownBy(() -> halfOpenState.setOpenState(null))
+                    .isInstanceOf(NullPointerException.class)
+                    .hasMessage("openState cannot be null");
+        }
 
-        verify(strategy).onException();
-        verify(strategy, never()).onRequest();
-    }
-
-    @Test
-    @DisplayName("UT: execute(Supplier) should call strategy.onRequest() when unobservable exception is thrown")
-    public void executeSupplier_shouldCallOnRequest_whenUnobservableExceptionThrown() {
-        assertThatThrownBy(() -> halfOpenState.execute((Supplier<String>) () -> {
-            throw new IllegalStateException("Not observable");
-        })).isInstanceOf(IllegalStateException.class);
-
-        verify(strategy).onRequest();
-        verify(strategy, never()).onException();
-    }
-
-    @Test
-    @DisplayName("UT: should switch to OPEN state and reset strategy when transition is TO_OPEN and trySetState succeeds")
-    public void shouldSwitchToOpenStateAndResetStrategy_whenTransitionToOpenAndSetStateSucceeds() {
-        when(strategy.getTransition()).thenReturn(HalfOpenTransition.TO_OPEN);
-        when(circuitBreaker.trySetState(halfOpenState, openState)).thenReturn(true);
-
-        halfOpenState.execute(() -> {});
-
-        verify(circuitBreaker).trySetState(halfOpenState, openState);
-        verify(strategy).reset();
-    }
-
-    @Test
-    @DisplayName("UT: should switch to CLOSE state and reset strategy when transition is TO_CLOSE and trySetState succeeds")
-    public void shouldSwitchToCloseStateAndResetStrategy_whenTransitionToCloseAndSetStateSucceeds() {
-        when(strategy.getTransition()).thenReturn(HalfOpenTransition.TO_CLOSE);
-        when(circuitBreaker.trySetState(halfOpenState, closeState)).thenReturn(true);
-
-        halfOpenState.execute(() -> {});
-
-        verify(circuitBreaker).trySetState(halfOpenState, closeState);
-        verify(strategy).reset();
-    }
-
-    @Test
-    @DisplayName("UT: should NOT reset strategy when transition is TO_OPEN but trySetState fails")
-    public void shouldNotResetStrategy_whenTransitionToOpenButSetStateFails() {
-        when(strategy.getTransition()).thenReturn(HalfOpenTransition.TO_OPEN);
-        when(circuitBreaker.trySetState(halfOpenState, openState)).thenReturn(false);
-
-        halfOpenState.execute(() -> {});
-
-        verify(circuitBreaker).trySetState(halfOpenState, openState);
-        verify(strategy, never()).reset();
-    }
-
-    @Test
-    @DisplayName("UT: should NOT reset strategy when transition is TO_CLOSE but trySetState fails")
-    public void shouldNotResetStrategy_whenTransitionToCloseButSetStateFails() {
-        when(strategy.getTransition()).thenReturn(HalfOpenTransition.TO_CLOSE);
-        when(circuitBreaker.trySetState(halfOpenState, closeState)).thenReturn(false);
-
-        halfOpenState.execute(() -> {});
-
-        verify(circuitBreaker).trySetState(halfOpenState, closeState);
-        verify(strategy, never()).reset();
-    }
-
-    @Test
-    @DisplayName("UT: should NOT attempt to switch state when transition is NO_TRANSITION")
-    public void shouldNotAttemptSwitchState_whenTransitionNoTransition() {
-        when(strategy.getTransition()).thenReturn(HalfOpenTransition.NO_TRANSITION);
-
-        halfOpenState.execute(() -> {});
-
-        verify(circuitBreaker, never()).trySetState(any(), any());
-        verify(strategy, never()).reset();
+        @Test
+        @DisplayName("setOpenState should throw IllegalStateException when already initialized")
+        void setOpenState_shouldThrowIllegalState_whenAlreadyInitialized() {
+            halfOpenState.setOpenState(openState);
+            assertThatThrownBy(() -> halfOpenState.setOpenState(mock(CircuitState.class)))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessage("cannot modify state with this method");
+        }
     }
 }

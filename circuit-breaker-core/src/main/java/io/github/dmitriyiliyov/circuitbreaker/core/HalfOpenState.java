@@ -1,48 +1,43 @@
 package io.github.dmitriyiliyov.circuitbreaker.core;
 
-import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.HalfOpenObserveStrategy;
+import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.HalfOpenStateStrategy;
 import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.HalfOpenTransition;
 
 import java.util.Objects;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
-public class HalfOpenState implements CircuitState {
+public class HalfOpenState implements CircuitState, ConfigurableHalfOpenState {
 
     private final CircuitBreaker circuitBreaker;
     private CircuitState openState;
     private CircuitState closeState;
-    private final HalfOpenObserveStrategy strategy;
+    private final HalfOpenStateStrategy strategy;
     private final Function<Throwable, Boolean> checker;
 
-    public HalfOpenState(CircuitBreaker circuitBreaker, HalfOpenObserveStrategy strategy) {
+    HalfOpenState(CircuitBreaker circuitBreaker, HalfOpenStateStrategy strategy) {
         this.circuitBreaker = Objects.requireNonNull(circuitBreaker, "circuitBreaker cannot be null");
         this.strategy = Objects.requireNonNull(strategy, "strategy cannot be null");
-        this.checker = (throwable) -> circuitBreaker.getObservableExceptions()
-                .stream()
-                .anyMatch(e -> e.isInstance(throwable));
+        this.checker = circuitBreaker.getChecker();
     }
 
-    public HalfOpenState(CircuitBreaker circuitBreaker, CircuitState openState, CircuitState closeState, HalfOpenObserveStrategy strategy) {
+    public HalfOpenState(CircuitBreaker circuitBreaker, CircuitState openState, CircuitState closeState, HalfOpenStateStrategy strategy) {
         this.circuitBreaker = Objects.requireNonNull(circuitBreaker, "circuitBreaker cannot be null");
         this.openState = Objects.requireNonNull(openState, "openState cannot be null");
         this.closeState = Objects.requireNonNull(closeState, "closeState cannot be null");
         this.strategy = Objects.requireNonNull(strategy, "strategy cannot be null");
-        this.checker = (throwable) -> circuitBreaker.getObservableExceptions()
-                .stream()
-                .anyMatch(e -> e.isInstance(throwable));
+        this.checker = circuitBreaker.getChecker();
     }
 
     @Override
-    public void execute(Runnable process) {
+    public void execute(CheckedRunnable process) throws Throwable {
         try {
             process.run();
-            strategy.onRequest();
+            strategy.onSuccess();
         } catch (Throwable throwable) {
             if (checker.apply(throwable)) {
                 strategy.onException();
             } else {
-                strategy.onRequest();
+                strategy.onSuccess();
             }
             throw throwable;
         } finally {
@@ -51,16 +46,16 @@ public class HalfOpenState implements CircuitState {
     }
 
     @Override
-    public <T> T execute(Supplier<T> process) {
+    public <T> T execute(CheckedSupplier<T> process) throws Throwable {
         try {
             T response = process.get();
-            strategy.onRequest();
+            strategy.onSuccess();
             return response;
         } catch (Throwable throwable) {
             if (checker.apply(throwable)) {
                 strategy.onException();
             } else {
-                strategy.onRequest();
+                strategy.onSuccess();
             }
             throw throwable;
         } finally {
@@ -76,19 +71,36 @@ public class HalfOpenState implements CircuitState {
             if (circuitBreaker.trySetState(this, openState)) {
                 strategy.reset();
             }
-        }
-        if (HalfOpenTransition.TO_CLOSE.equals(strategy.getTransition())) {
+        } else if (HalfOpenTransition.TO_CLOSE.equals(strategy.getTransition())) {
             if (circuitBreaker.trySetState(this, closeState)) {
                 strategy.reset();
             }
         }
     }
 
+    @Override
     public void setCloseState(CircuitState closeState) {
-        this.closeState = Objects.requireNonNull(closeState, "closeState cannot be null");
+        if (this.closeState == null) {
+            this.closeState = Objects.requireNonNull(closeState, "closeState cannot be null");
+        } else {
+            throw new IllegalStateException("cannot modify state with this method");
+        }
     }
 
+    @Override
     public void setOpenState(CircuitState openState) {
-        this.openState = Objects.requireNonNull(openState, "openState cannot be null");
+        if (this.openState == null) {
+            this.openState = Objects.requireNonNull(openState, "openState cannot be null");
+        } else {
+            throw new IllegalStateException("cannot modify state with this method");
+        }
+    }
+
+    CircuitState getOpenState() {
+        return openState;
+    }
+
+    CircuitState getCloseState() {
+        return closeState;
     }
 }

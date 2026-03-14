@@ -1,17 +1,13 @@
 package io.github.dmitriyiliyov.circuitbreaker.core;
 
-import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.CloseObserveStrategy;
+import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.CloseStateStrategy;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.junit.jupiter.MockitoSettings;
-import org.mockito.quality.Strictness;
-
-import java.util.Set;
-import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -19,121 +15,151 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-@MockitoSettings(strictness = Strictness.LENIENT)
 public class CloseStateUnitTests {
 
     @Mock
-    CircuitBreaker circuitBreaker;
+    private CircuitBreaker circuitBreaker;
 
     @Mock
-    CircuitState nextState;
+    private CircuitState nextState;
 
     @Mock
-    CloseObserveStrategy strategy;
+    private CloseStateStrategy strategy;
 
-    CloseState closeState;
+    private CloseState closeState;
 
     @BeforeEach
-    public void setUp() {
-        when(circuitBreaker.getObservableExceptions()).thenReturn(Set.of(IllegalArgumentException.class));
-        closeState = new CloseState(circuitBreaker, nextState, strategy);
+    void setUp() {
+        when(circuitBreaker.getChecker()).thenReturn(throwable -> throwable instanceof IllegalArgumentException);
     }
 
-    @Test
-    @DisplayName("UT: execute(Runnable) should call strategy.onRequest() on success")
-    public void executeRunnable_shouldCallOnRequest_onSuccess() {
-        closeState.execute(() -> {});
+    @Nested
+    @DisplayName("Tests for execute and transition logic")
+    class ExecuteAndTransitionTests {
 
-        verify(strategy).onRequest();
-        verify(strategy, never()).onException();
+        @BeforeEach
+        void setUp() {
+            closeState = new CloseState(circuitBreaker, nextState, strategy);
+        }
+
+        @Test
+        @DisplayName("UT: execute(CheckedRunnable) should call strategy.onSuccess() on successSupplier")
+        void executeRunnable_shouldCallOnSuccess_onSuccess() throws Throwable {
+            closeState.execute(() -> {});
+            verify(strategy).onSuccess();
+            verify(strategy, never()).onException();
+        }
+
+        @Test
+        @DisplayName("UT: execute(CheckedRunnable) should call strategy.onException() when observable exceptionSupplier is thrown")
+        void executeRunnable_shouldCallOnException_whenObservableExceptionThrown() {
+            assertThatThrownBy(() -> closeState.execute(() -> {
+                throw new IllegalArgumentException();
+            })).isInstanceOf(IllegalArgumentException.class);
+            verify(strategy).onException();
+            verify(strategy, never()).onSuccess();
+        }
+
+        @Test
+        @DisplayName("UT: execute(CheckedRunnable) should call strategy.onSuccess() when unobservable exceptionSupplier is thrown")
+        void executeRunnable_shouldCallOnSuccess_whenUnobservableExceptionThrown() {
+            assertThatThrownBy(() -> closeState.execute(() -> {
+                throw new IllegalStateException("Not observable");
+            })).isInstanceOf(IllegalStateException.class);
+            verify(strategy).onSuccess();
+            verify(strategy, never()).onException();
+        }
+
+        @Test
+        @DisplayName("UT: execute(CheckedSupplier) should return value and call strategy.onSuccess() on successSupplier")
+        void executeSupplier_shouldReturnValueAndCallOnSuccess_onSuccess() throws Throwable {
+            String result = closeState.execute(() -> "successSupplier");
+            assertThat(result).isEqualTo("successSupplier");
+            verify(strategy).onSuccess();
+            verify(strategy, never()).onException();
+        }
+
+        @Test
+        @DisplayName("UT: execute(CheckedSupplier) should call strategy.onException() when observable exceptionSupplier is thrown")
+        void executeSupplier_shouldCallOnException_whenObservableExceptionThrown() {
+            assertThatThrownBy(() -> closeState.execute((CheckedSupplier<String>) () -> {
+                throw new IllegalArgumentException();
+            })).isInstanceOf(IllegalArgumentException.class);
+            verify(strategy).onException();
+            verify(strategy, never()).onSuccess();
+        }
+
+        @Test
+        @DisplayName("UT: execute(CheckedSupplier) should call strategy.onSuccess() when unobservable exceptionSupplier is thrown")
+        void executeSupplier_shouldCallOnSuccess_whenUnobservableExceptionThrown() {
+            assertThatThrownBy(() -> closeState.execute((CheckedSupplier<String>) () -> {
+                throw new IllegalStateException("Not observable");
+            })).isInstanceOf(IllegalStateException.class);
+            verify(strategy).onSuccess();
+            verify(strategy, never()).onException();
+        }
+
+        @Test
+        @DisplayName("UT: should switch state when strategy shouldTrip and trySetState succeeds")
+        void shouldSwitchState_whenShouldTripAndSetStateSucceeds() throws Throwable {
+            when(strategy.shouldTrip()).thenReturn(true);
+            when(circuitBreaker.trySetState(closeState, nextState)).thenReturn(true);
+            closeState.execute(() -> {});
+            verify(circuitBreaker).trySetState(closeState, nextState);
+            verify(strategy).reset();
+        }
+
+        @Test
+        @DisplayName("UT: should NOT reset strategy when shouldTrip is true but trySetState fails")
+        void shouldNotResetStrategy_whenShouldTripButSetStateFails() throws Throwable {
+            when(strategy.shouldTrip()).thenReturn(true);
+            when(circuitBreaker.trySetState(closeState, nextState)).thenReturn(false);
+            closeState.execute(() -> {});
+            verify(circuitBreaker).trySetState(closeState, nextState);
+            verify(strategy, never()).reset();
+        }
+
+        @Test
+        @DisplayName("UT: should NOT attempt to switch state when shouldTrip is false")
+        void shouldNotAttemptSwitchState_whenShouldTripFalse() throws Throwable {
+            when(strategy.shouldTrip()).thenReturn(false);
+            closeState.execute(() -> {});
+            verify(circuitBreaker, never()).trySetState(any(), any());
+            verify(strategy, never()).reset();
+        }
     }
 
-    @Test
-    @DisplayName("UT: execute(Runnable) should call strategy.onException() when observable exception is thrown")
-    public void executeRunnable_shouldCallOnException_whenObservableExceptionThrown() {
-        assertThatThrownBy(() -> closeState.execute(() -> {
-            throw new IllegalArgumentException();
-        })).isInstanceOf(IllegalArgumentException.class);
+    @Nested
+    @DisplayName("Tests for setter logic")
+    class SetterTests {
 
-        verify(strategy).onException();
-        verify(strategy, never()).onRequest();
-    }
+        @BeforeEach
+        void setUp() {
+            closeState = new CloseState(circuitBreaker, strategy);
+        }
 
-    @Test
-    @DisplayName("UT: execute(Runnable) should call strategy.onRequest() when unobservable exception is thrown")
-    public void executeRunnable_shouldCallOnRequest_whenUnobservableExceptionThrown() {
-        assertThatThrownBy(() -> closeState.execute(() -> {
-            throw new IllegalStateException("Not observable");
-        })).isInstanceOf(IllegalStateException.class);
+        @Test
+        @DisplayName("setNextState should set state when not initialized")
+        void setNextState_shouldSetState_whenNotInitialized() {
+            closeState.setNextState(nextState);
+            assertThat(closeState.getNextState()).isSameAs(nextState);
+        }
 
-        verify(strategy).onRequest();
-        verify(strategy, never()).onException();
-    }
+        @Test
+        @DisplayName("setNextState should throw NullPointerException when state is null")
+        void setNextState_shouldThrowNPE_whenStateIsNull() {
+            assertThatThrownBy(() -> closeState.setNextState(null))
+                    .isInstanceOf(NullPointerException.class)
+                    .hasMessage("nextState cannot be null");
+        }
 
-    @Test
-    @DisplayName("UT: execute(Supplier) should return value and call strategy.onRequest() on success")
-    public void executeSupplier_shouldReturnValueAndCallOnRequest_onSuccess() {
-        String result = closeState.execute(() -> "success");
-
-        assertThat(result).isEqualTo("success");
-        verify(strategy).onRequest();
-        verify(strategy, never()).onException();
-    }
-
-    @Test
-    @DisplayName("UT: execute(Supplier) should call strategy.onException() when observable exception is thrown")
-    public void executeSupplier_shouldCallOnException_whenObservableExceptionThrown() {
-        assertThatThrownBy(() -> closeState.execute((Supplier<String>) () -> {
-            throw new IllegalArgumentException();
-        })).isInstanceOf(IllegalArgumentException.class);
-
-        verify(strategy).onException();
-        verify(strategy, never()).onRequest();
-    }
-
-    @Test
-    @DisplayName("UT: execute(Supplier) should call strategy.onRequest() when unobservable exception is thrown")
-    public void executeSupplier_shouldCallOnRequest_whenUnobservableExceptionThrown() {
-        assertThatThrownBy(() -> closeState.execute((Supplier<String>) () -> {
-            throw new IllegalStateException("Not observable");
-        })).isInstanceOf(IllegalStateException.class);
-
-        verify(strategy).onRequest();
-        verify(strategy, never()).onException();
-    }
-
-    @Test
-    @DisplayName("UT: should switch state and reset strategy when shouldTrip returns true and trySetState succeeds")
-    public void shouldSwitchStateAndResetStrategy_whenShouldTripTrueAndSetStateSucceeds() {
-        when(strategy.shouldTrip()).thenReturn(true);
-        when(circuitBreaker.trySetState(closeState, nextState)).thenReturn(true);
-
-        closeState.execute(() -> {});
-
-        verify(circuitBreaker).trySetState(closeState, nextState);
-        verify(strategy).reset();
-    }
-
-    @Test
-    @DisplayName("UT: should NOT reset strategy when shouldTrip returns true but trySetState fails")
-    public void shouldNotResetStrategy_whenShouldTripTrueButSetStateFails() {
-        when(strategy.shouldTrip()).thenReturn(true);
-        when(circuitBreaker.trySetState(closeState, nextState)).thenReturn(false);
-
-        closeState.execute(() -> {});
-
-        verify(circuitBreaker).trySetState(closeState, nextState);
-        verify(strategy, never()).reset();
-    }
-
-    @Test
-    @DisplayName("UT: should NOT attempt to switch state when shouldTrip returns false")
-    public void shouldNotAttemptSwitchState_whenShouldTripFalse() {
-        when(strategy.shouldTrip()).thenReturn(false);
-
-        closeState.execute(() -> {});
-
-        verify(circuitBreaker, never()).trySetState(any(), any());
-        verify(strategy, never()).reset();
+        @Test
+        @DisplayName("setNextState should throw IllegalStateException when already initialized")
+        void setNextState_shouldThrowIllegalState_whenAlreadyInitialized() {
+            closeState.setNextState(nextState);
+            assertThatThrownBy(() -> closeState.setNextState(mock(CircuitState.class)))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessage("cannot modify state with this method");
+        }
     }
 }

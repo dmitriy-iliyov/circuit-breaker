@@ -1,37 +1,40 @@
 package io.github.dmitriyiliyov.circuitbreaker.core;
 
-import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.CloseObserveStrategy;
+import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.CloseStateStrategy;
 
 import java.util.Objects;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
-public class CloseState implements CircuitState {
+public class CloseState implements CircuitState, ConfigurableCircuitState {
 
     private final CircuitBreaker circuitBreaker;
-    private final CircuitState nextState;
-    private final CloseObserveStrategy strategy;
+    private CircuitState nextState;
+    private final CloseStateStrategy strategy;
     private final Function<Throwable, Boolean> checker;
 
-    public CloseState(CircuitBreaker circuitBreaker, CircuitState nextState, CloseObserveStrategy strategy) {
+    CloseState(CircuitBreaker circuitBreaker, CloseStateStrategy strategy) {
+        this.circuitBreaker = Objects.requireNonNull(circuitBreaker, "circuitBreaker cannot be null");
+        this.strategy = Objects.requireNonNull(strategy, "strategy cannot be null");
+        this.checker = circuitBreaker.getChecker();
+    }
+
+    public CloseState(CircuitBreaker circuitBreaker, CircuitState nextState, CloseStateStrategy strategy) {
         this.circuitBreaker = Objects.requireNonNull(circuitBreaker, "circuitBreaker cannot be null");
         this.nextState = Objects.requireNonNull(nextState, "nextState cannot be null");
         this.strategy = Objects.requireNonNull(strategy, "strategy cannot be null");
-        this.checker = (throwable) -> circuitBreaker.getObservableExceptions()
-                .stream()
-                .anyMatch(e -> e.isInstance(throwable));
+        this.checker = circuitBreaker.getChecker();
     }
 
     @Override
-    public void execute(Runnable process) {
+    public void execute(CheckedRunnable process) throws Throwable {
         try {
             process.run();
-            strategy.onRequest();
+            strategy.onSuccess();
         } catch (Throwable throwable) {
             if (checker.apply(throwable)) {
                 strategy.onException();
             } else {
-                strategy.onRequest();
+                strategy.onSuccess();
             }
             throw throwable;
         } finally {
@@ -40,16 +43,16 @@ public class CloseState implements CircuitState {
     }
 
     @Override
-    public <T> T execute(Supplier<T> process) {
+    public <T> T execute(CheckedSupplier<T> process) throws Throwable {
         try {
             T response = process.get();
-            strategy.onRequest();
+            strategy.onSuccess();
             return response;
         } catch (Throwable throwable) {
             if (checker.apply(throwable)) {
                 strategy.onException();
             } else {
-                strategy.onRequest();
+                strategy.onSuccess();
             }
             throw throwable;
         } finally {
@@ -63,5 +66,18 @@ public class CloseState implements CircuitState {
                 strategy.reset();
             }
         }
+    }
+
+    @Override
+    public void setNextState(CircuitState nextState) {
+        if (this.nextState == null) {
+            this.nextState = Objects.requireNonNull(nextState, "nextState cannot be null");
+        } else {
+            throw new IllegalStateException("cannot modify state with this method");
+        }
+    }
+
+    CircuitState getNextState() {
+        return nextState;
     }
 }
