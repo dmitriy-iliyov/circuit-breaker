@@ -236,7 +236,7 @@ public final class CircuitBreakerConfiguration {
             return this;
         }
 
-        public Builder closeState(CloseStateConfiguration closeState) {
+        Builder closeState(CloseStateConfiguration closeState) {
             this.closeState = closeState;
             return this;
         }

@@ -116,7 +116,7 @@ public class DefaultCircuitBreakerIntegrationTests {
         assertThat(circuitBreaker.getState()).isInstanceOf(OpenState.class);
 
         // open state
-        Thread.sleep(Duration.ofSeconds(1).toMillis());
+        Thread.sleep(Duration.ofSeconds(3).toMillis());
         circuitBreaker.execute(() -> System.out.println("Success HTTP request"));
         assertThat(circuitBreaker.getState()).isInstanceOf(HalfOpenState.class);
 
@@ -142,7 +142,7 @@ public class DefaultCircuitBreakerIntegrationTests {
         assertThat(circuitBreaker.getState()).isInstanceOf(OpenState.class);
 
         // open state
-        Thread.sleep(Duration.ofSeconds(1).toMillis());
+        Thread.sleep(Duration.ofSeconds(3).toMillis());
         circuitBreaker.execute(() -> System.out.println("Success HTTP request"));
         assertThat(circuitBreaker.getState()).isInstanceOf(HalfOpenState.class);
 
@@ -155,7 +155,7 @@ public class DefaultCircuitBreakerIntegrationTests {
         assertThat(circuitBreaker.getState()).isInstanceOf(OpenState.class);
 
         // second open state
-        Thread.sleep(Duration.ofSeconds(1).toMillis());
+        Thread.sleep(Duration.ofSeconds(3).toMillis());
         circuitBreaker.execute(() -> System.out.println("Success HTTP request"));
         assertThat(circuitBreaker.getState()).isInstanceOf(HalfOpenState.class);
 
@@ -225,7 +225,7 @@ public class DefaultCircuitBreakerIntegrationTests {
         assertThat(circuitBreaker.getState()).isInstanceOf(OpenState.class);
 
         // open state
-        Thread.sleep(Duration.ofSeconds(1).toMillis());
+        Thread.sleep(Duration.ofSeconds(3).toMillis());
         circuitBreaker.execute(() -> System.out.println("Success HTTP request"));
         assertThat(circuitBreaker.getState()).isInstanceOf(CloseState.class);
     }

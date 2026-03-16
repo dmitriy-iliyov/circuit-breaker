@@ -7,13 +7,9 @@
 ![GitHub last commit](https://img.shields.io/github/last-commit/dmitriy-iliyov/circuit-breaker)
 
 ## Overview
-This library provides a lightweight and flexible implementation of the [Circuit Breaker pattern](https://microservices.io/patterns/reliability/circuit-breaker.html) in Java. It is designed to improve the stability and resilience of distributed systems by preventing cascading failures when a remote service is experiencing issues.
+This library is an exploratory implementation of the [Circuit Breaker Pattern](https://microservices.io/patterns/reliability/circuit-breaker.html) in Java, designed to improve system resilience by preventing cascading failures. It is not intended as a replacement for mature libraries like Resilience4j but serves as a research project that may be suitable for small to medium-sized applications where its specific design trade-offs are a good fit.
 
-The library is built around a state machine where state transitions are managed by highly configurable strategies. This approach allows you to precisely define the conditions for tripping the circuit breaker, the duration it stays open, and the criteria for closing it again.
-
-A key design principle is the separation of concerns, where different observation strategies can be combined to fit specific use cases. For high-throughput, low-latency scenarios, the library provides lock-free implementations of key strategies, ensuring minimal performance overhead while maintaining resilience.
-
-**It is not intended as a replacement for mature libraries like Resilience4j but rather as an exploratory project that is well-suited for small to medium-sized applications where its specific design trade-offs are a good fit.**
+The core of the library is a state machine (`CLOSE`, `OPEN`, `HALF_OPEN`) where transitions are managed by highly configurable and pluggable observation strategies. This design allows for precise control over the circuit's behavior and enables high-performance, low-latency scenarios through lock-free strategy implementations, ensuring minimal overhead while maintaining resilience.
 
 ## Key Features
 - **State-driven Architecture**: Follows a clear state machine (`CLOSE`, `OPEN`, `HALF_OPEN`) for predictable behavior.

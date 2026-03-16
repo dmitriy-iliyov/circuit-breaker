@@ -15,12 +15,12 @@ public final class DefaultCircuitBreakerFactory implements CircuitBreakerFactory
 
     @Override
     public CircuitBreaker of(CircuitBreakerConfiguration configuration) {
-        CircuitBreaker circuitBreaker = internalOf(configuration);
+        CircuitBreaker circuitBreaker = createFromConfiguration(configuration);
         registry.register(configuration, circuitBreaker);
         return circuitBreaker;
     }
 
-    private CircuitBreaker internalOf(CircuitBreakerConfiguration configuration) {
+    private CircuitBreaker createFromConfiguration(CircuitBreakerConfiguration configuration) {
         ConfigurableCircuitBreaker circuitBreaker = new DefaultCircuitBreaker(
                 configuration.getObservableExceptions(),
                 configuration.getIgnorableExceptions()
@@ -38,7 +38,7 @@ public final class DefaultCircuitBreakerFactory implements CircuitBreakerFactory
     public CircuitBreaker ofExists(String referenceName, String newName) {
         CircuitBreakerConfiguration configuration = registry.getConfiguration(referenceName);
         CircuitBreakerConfiguration newConfiguration = configuration.toBuilder().name(newName).build();
-        CircuitBreaker circuitBreaker = internalOf(newConfiguration);
+        CircuitBreaker circuitBreaker = createFromConfiguration(newConfiguration);
         registry.register(newConfiguration, circuitBreaker);
         return circuitBreaker;
     }
