@@ -1,9 +1,6 @@
-package io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.providers;
+package io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies;
 
 import io.github.dmitriyiliyov.circuitbreaker.core.config.CircuitBreakerConfiguration;
-import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.DefaultRequestTimer;
-import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.NoopRequestTimer;
-import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.RequestTimer;
 
 public final class RequestTimerFactory {
 

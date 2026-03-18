@@ -4,6 +4,7 @@ import io.github.dmitriyiliyov.circuitbreaker.core.config.CircuitBreakerConfigur
 import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.DefaultRequestTimer;
 import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.NoopRequestTimer;
 import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.RequestTimer;
+import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.RequestTimerFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

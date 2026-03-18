@@ -2,7 +2,7 @@ package io.github.dmitriyiliyov.circuitbreaker.core;
 
 import io.github.dmitriyiliyov.circuitbreaker.core.config.CircuitBreakerConfiguration;
 import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.RequestTimer;
-import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.providers.RequestTimerFactory;
+import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.RequestTimerFactory;
 import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.providers.StrategiesProvider;
 
 public final class DefaultCircuitBreakerFactory implements CircuitBreakerFactory {
