@@ -1,6 +1,8 @@
 package io.github.dmitriyiliyov.circuitbreaker.core;
 
 import io.github.dmitriyiliyov.circuitbreaker.core.config.CircuitBreakerConfiguration;
+import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.RequestTimer;
+import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.providers.RequestTimerFactory;
 import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.providers.StrategiesProvider;
 
 public final class DefaultCircuitBreakerFactory implements CircuitBreakerFactory {
@@ -26,10 +28,11 @@ public final class DefaultCircuitBreakerFactory implements CircuitBreakerFactory
                 configuration.getIgnorableExceptions()
         );
         Strategies strategies = strategiesProvider.getStrategies(configuration);
+        RequestTimer requestTimer = RequestTimerFactory.of(configuration);
         if (configuration.isHalfOpenStateEnabled()) {
-            CircuitBreakerStateMachineInitializer.init(circuitBreaker, strategies);
+            CircuitBreakerStateMachineInitializer.init(circuitBreaker, strategies, requestTimer);
         } else {
-            CircuitBreakerStateMachineInitializer.initWithoutHalfOpenState(circuitBreaker, strategies);
+            CircuitBreakerStateMachineInitializer.initWithoutHalfOpenState(circuitBreaker, strategies, requestTimer);
         }
         return (CircuitBreaker) circuitBreaker;
     }

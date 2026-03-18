@@ -3,6 +3,7 @@ package io.github.dmitriyiliyov.circuitbreaker.core;
 import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.CloseStateStrategy;
 import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.HalfOpenStateStrategy;
 import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.OpenStateStrategy;
+import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.RequestTimer;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -16,6 +17,8 @@ public class CircuitBreakerStateMachineInitializerUnitTests {
     private final HalfOpenStateStrategy halfOpenStateStrategy = mock(HalfOpenStateStrategy.class);
     private final OpenStateStrategy openStateStrategy = mock(OpenStateStrategy.class);
 
+    private final RequestTimer timer = mock(RequestTimer.class);
+
     private final Strategies strategiesWithHalfOpen = new Strategies(
             closeStateStrategy, halfOpenStateStrategy, openStateStrategy
     );
@@ -28,17 +31,17 @@ public class CircuitBreakerStateMachineInitializerUnitTests {
     private final TestCircuitBreaker circuitBreaker = mock(TestCircuitBreaker.class);
 
     @Test
-    @DisplayName("init: should call setState exactly once")
+    @DisplayName("UT: init() should call setState exactly once")
     public void init_shouldCallSetStateExactlyOnce() {
-        CircuitBreakerStateMachineInitializer.init(circuitBreaker, strategiesWithHalfOpen);
+        CircuitBreakerStateMachineInitializer.init(circuitBreaker, strategiesWithHalfOpen, timer);
 
         verify(circuitBreaker, times(1)).setState(any());
     }
 
     @Test
-    @DisplayName("init: should set CloseState as initial state")
+    @DisplayName("UT: init() should set CloseState as initial state")
     public void init_shouldSetCloseStateAsInitialState() {
-        CircuitBreakerStateMachineInitializer.init(circuitBreaker, strategiesWithHalfOpen);
+        CircuitBreakerStateMachineInitializer.init(circuitBreaker, strategiesWithHalfOpen, timer);
 
         ArgumentCaptor<CircuitState> captor = ArgumentCaptor.forClass(CircuitState.class);
         verify(circuitBreaker).setState(captor.capture());
@@ -46,9 +49,9 @@ public class CircuitBreakerStateMachineInitializerUnitTests {
     }
 
     @Test
-    @DisplayName("init: CloseState should link to OpenState as next state")
+    @DisplayName("UT: init() CloseState should link to OpenState as next state")
     public void init_closeStateShouldLinkToOpenState() {
-        CircuitBreakerStateMachineInitializer.init(circuitBreaker, strategiesWithHalfOpen);
+        CircuitBreakerStateMachineInitializer.init(circuitBreaker, strategiesWithHalfOpen, timer);
 
         ArgumentCaptor<CircuitState> captor = ArgumentCaptor.forClass(CircuitState.class);
         verify(circuitBreaker).setState(captor.capture());
@@ -58,9 +61,9 @@ public class CircuitBreakerStateMachineInitializerUnitTests {
     }
 
     @Test
-    @DisplayName("init: OpenState should link to HalfOpenState as next state")
+    @DisplayName("UT: init() OpenState should link to HalfOpenState as next state")
     public void init_openStateShouldLinkToHalfOpenState() {
-        CircuitBreakerStateMachineInitializer.init(circuitBreaker, strategiesWithHalfOpen);
+        CircuitBreakerStateMachineInitializer.init(circuitBreaker, strategiesWithHalfOpen, timer);
 
         ArgumentCaptor<CircuitState> captor = ArgumentCaptor.forClass(CircuitState.class);
         verify(circuitBreaker).setState(captor.capture());
@@ -71,9 +74,9 @@ public class CircuitBreakerStateMachineInitializerUnitTests {
     }
 
     @Test
-    @DisplayName("init: HalfOpenState should link to CloseState and OpenState")
+    @DisplayName("UT: init() HalfOpenState should link to CloseState and OpenState")
     public void init_halfOpenStateShouldLinkToCloseAndOpenState() {
-        CircuitBreakerStateMachineInitializer.init(circuitBreaker, strategiesWithHalfOpen);
+        CircuitBreakerStateMachineInitializer.init(circuitBreaker, strategiesWithHalfOpen, timer);
 
         ArgumentCaptor<CircuitState> captor = ArgumentCaptor.forClass(CircuitState.class);
         verify(circuitBreaker).setState(captor.capture());
@@ -87,17 +90,17 @@ public class CircuitBreakerStateMachineInitializerUnitTests {
     }
 
     @Test
-    @DisplayName("initWithoutHalfOpenState: should call setState exactly once")
+    @DisplayName("UT: initWithoutHalfOpenState() should call setState exactly once")
     public void initWithoutHalfOpenState_shouldCallSetStateExactlyOnce() {
-        CircuitBreakerStateMachineInitializer.initWithoutHalfOpenState(circuitBreaker, strategiesWithoutHalfOpen);
+        CircuitBreakerStateMachineInitializer.initWithoutHalfOpenState(circuitBreaker, strategiesWithoutHalfOpen, timer);
 
         verify(circuitBreaker, times(1)).setState(any());
     }
 
     @Test
-    @DisplayName("initWithoutHalfOpenState: should set CloseState as initial state")
+    @DisplayName("UT: initWithoutHalfOpenState() should set CloseState as initial state")
     public void initWithoutHalfOpenState_shouldSetCloseStateAsInitialState() {
-        CircuitBreakerStateMachineInitializer.initWithoutHalfOpenState(circuitBreaker, strategiesWithoutHalfOpen);
+        CircuitBreakerStateMachineInitializer.initWithoutHalfOpenState(circuitBreaker, strategiesWithoutHalfOpen, timer);
 
         ArgumentCaptor<CircuitState> captor = ArgumentCaptor.forClass(CircuitState.class);
         verify(circuitBreaker).setState(captor.capture());
@@ -105,9 +108,9 @@ public class CircuitBreakerStateMachineInitializerUnitTests {
     }
 
     @Test
-    @DisplayName("initWithoutHalfOpenState: CloseState should link to OpenState as next state")
+    @DisplayName("UT: initWithoutHalfOpenState() CloseState should link to OpenState as next state")
     public void initWithoutHalfOpenState_closeStateShouldLinkToOpenState() {
-        CircuitBreakerStateMachineInitializer.initWithoutHalfOpenState(circuitBreaker, strategiesWithoutHalfOpen);
+        CircuitBreakerStateMachineInitializer.initWithoutHalfOpenState(circuitBreaker, strategiesWithoutHalfOpen, timer);
 
         ArgumentCaptor<CircuitState> captor = ArgumentCaptor.forClass(CircuitState.class);
         verify(circuitBreaker).setState(captor.capture());
@@ -117,9 +120,9 @@ public class CircuitBreakerStateMachineInitializerUnitTests {
     }
 
     @Test
-    @DisplayName("initWithoutHalfOpenState: OpenState should link back to CloseState")
+    @DisplayName("UT: initWithoutHalfOpenState() OpenState should link back to CloseState")
     public void initWithoutHalfOpenState_openStateShouldLinkBackToCloseState() {
-        CircuitBreakerStateMachineInitializer.initWithoutHalfOpenState(circuitBreaker, strategiesWithoutHalfOpen);
+        CircuitBreakerStateMachineInitializer.initWithoutHalfOpenState(circuitBreaker, strategiesWithoutHalfOpen, timer);
 
         ArgumentCaptor<CircuitState> captor = ArgumentCaptor.forClass(CircuitState.class);
         verify(circuitBreaker).setState(captor.capture());

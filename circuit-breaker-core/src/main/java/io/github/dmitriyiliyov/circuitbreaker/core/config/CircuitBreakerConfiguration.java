@@ -1,5 +1,7 @@
 package io.github.dmitriyiliyov.circuitbreaker.core.config;
 
+import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.SlowRequestException;
+
 import java.time.Duration;
 import java.util.Collections;
 import java.util.HashSet;
@@ -18,6 +20,8 @@ public final class CircuitBreakerConfiguration {
     private final boolean isHalfOpenStateEnabled;
     private final int maxRequestInHalfOpenState;
     private final int maxExceptionCountInHalfOpenState;
+    private final boolean isRequestTimerEnable;
+    private final Duration maxRequestExecutionDuration;
 
     private CircuitBreakerConfiguration(String name,
                                         Set<Class<? extends Throwable>> observableExceptions,
@@ -29,18 +33,32 @@ public final class CircuitBreakerConfiguration {
                                         Integer maxRequestInHalfOpenState,
                                         Integer maxExceptionCountInHalfOpenState,
                                         Double maxExceptionRateInHalfOpenState,
-                                        Duration waitDurationInOpenState) {
+                                        Duration waitDurationInOpenState,
+                                        Duration maxRequestExecutionDuration) {
         if (name == null || name.isBlank()) {
             throw new IllegalArgumentException("name cannot be null, blank or empty");
         }
         this.name = name;
+
+        this.maxRequestExecutionDuration = maxRequestExecutionDuration;
+        if (this.maxRequestExecutionDuration == null) {
+            this.isRequestTimerEnable = false;
+        } else {
+            this.isRequestTimerEnable = true;
+        }
 
         checkObservableAndIgnorableExceptions(observableExceptions, ignorableExceptions, exceptionPriority);
         Set<Class<? extends Throwable>> mutableObservable = new HashSet<>(observableExceptions);
         Set<Class<? extends Throwable>> mutableIgnorable = new HashSet<>(
                 ignorableExceptions == null ? Collections.emptySet() : ignorableExceptions
         );
+
         prepareObservableAndIgnorableExceptions(mutableObservable, mutableIgnorable, exceptionPriority);
+
+        if (this.isRequestTimerEnable && !mutableIgnorable.contains(SlowRequestException.class)) {
+            mutableObservable.add(SlowRequestException.class);
+        }
+
         this.observableExceptions = Set.copyOf(mutableObservable);
         this.ignorableExceptions = Set.copyOf(mutableIgnorable);
 
@@ -165,6 +183,14 @@ public final class CircuitBreakerConfiguration {
         return waitDurationInOpenState;
     }
 
+    public boolean isRequestTimerEnable() {
+        return isRequestTimerEnable;
+    }
+
+    public Duration getMaxRequestExecutionDuration() {
+        return maxRequestExecutionDuration;
+    }
+
     @Override
     public String toString() {
         return "CircuitBreakerConfiguration{" +
@@ -177,6 +203,8 @@ public final class CircuitBreakerConfiguration {
                 ", isHalfOpenStateEnabled=" + isHalfOpenStateEnabled +
                 ", maxRequestInHalfOpenState=" + maxRequestInHalfOpenState +
                 ", maxExceptionCountInHalfOpenState=" + maxExceptionCountInHalfOpenState +
+                ", isRequestTimerEnable=" + isRequestTimerEnable +
+                ", maxRequestExecutionDuration=" + maxRequestExecutionDuration +
                 '}';
     }
 
@@ -190,7 +218,8 @@ public final class CircuitBreakerConfiguration {
                 .waitDurationInOpenState(waitDurationInOpenState)
                 .halfOpenStateEnabled(isHalfOpenStateEnabled)
                 .maxRequestInHalfOpenState(maxRequestInHalfOpenState)
-                .maxExceptionCountInHalfOpenState(maxExceptionCountInHalfOpenState);
+                .maxExceptionCountInHalfOpenState(maxExceptionCountInHalfOpenState)
+                .maxRequestExecutionDuration(maxRequestExecutionDuration);
     }
 
     public static Builder builder() {
@@ -210,6 +239,7 @@ public final class CircuitBreakerConfiguration {
         private Integer maxRequestInHalfOpenState;
         private Integer maxExceptionCountInHalfOpenState;
         private Double maxExceptionRateInHalfOpenState;
+        private Duration maxRequestExecutionDuration;
 
         public Builder name(String name) {
             this.name = name;
@@ -273,6 +303,11 @@ public final class CircuitBreakerConfiguration {
             return this;
         }
 
+        public Builder maxRequestExecutionDuration(Duration maxRequestExecutionDuration) {
+            this.maxRequestExecutionDuration = maxRequestExecutionDuration;
+            return this;
+        }
+
         public CircuitBreakerConfiguration build() {
             return new CircuitBreakerConfiguration(
                     name,
@@ -285,7 +320,8 @@ public final class CircuitBreakerConfiguration {
                     maxRequestInHalfOpenState,
                     maxExceptionCountInHalfOpenState,
                     maxExceptionRateInHalfOpenState,
-                    waitDurationInOpenState
+                    waitDurationInOpenState,
+                    maxRequestExecutionDuration
             );
         }
     }

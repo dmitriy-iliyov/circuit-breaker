@@ -6,9 +6,6 @@ import java.util.Objects;
 
 public class OpenState implements CircuitState {
 
-    private final CircuitBreakerOpenException exception = new CircuitBreakerOpenException(
-            "Circuit breaker is open, request cannot be executed"
-    );
     private final CircuitBreaker circuitBreaker;
     private final CircuitState nextState;
     private final OpenStateStrategy strategy;
@@ -26,7 +23,7 @@ public class OpenState implements CircuitState {
             process.run();
             return;
         }
-        throw exception;
+        throw new CircuitBreakerOpenException("Circuit breaker is open, request cannot be executed");
     }
 
     @Override
@@ -35,7 +32,7 @@ public class OpenState implements CircuitState {
         if (handleTrip()) {
             return process.get();
         }
-        throw exception;
+        throw new CircuitBreakerOpenException("Circuit breaker is open, request cannot be executed");
     }
 
     private boolean handleTrip() {

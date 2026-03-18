@@ -1,5 +1,6 @@
 package io.github.dmitriyiliyov.circuitbreaker.core.config;
 
+import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.SlowRequestException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -349,5 +350,72 @@ public class CircuitBreakerConfigurationUnitTests {
         // RuntimeException should remain in ignorable and be removed from observable
         assertThat(config.getObservableExceptions()).containsExactly(IllegalArgumentException.class);
         assertThat(config.getIgnorableExceptions()).containsExactlyInAnyOrder(RuntimeException.class, IOException.class);
+    }
+
+    @Test
+    @DisplayName("UT: isRequestTimerEnable should be true when maxRequestExecutionDuration is not null")
+    void testRequestTimerEnabled() {
+        CircuitBreakerConfiguration config = baseBuilder()
+                .observableExceptions(Set.of(RuntimeException.class))
+                .ignorableExceptions(Set.of(IllegalStateException.class))
+                .exceptionPriority(ExceptionPriority.IGNORABLE)
+                .maxRequestExecutionDuration(Duration.ofSeconds(1))
+                .build();
+
+        assertThat(config.isRequestTimerEnable()).isTrue();
+    }
+
+    @Test
+    @DisplayName("UT: isRequestTimerEnable should be false when maxRequestExecutionDuration is null")
+    void testRequestTimerDisabled() {
+        CircuitBreakerConfiguration config = baseBuilder()
+                .observableExceptions(Set.of(RuntimeException.class))
+                .ignorableExceptions(Set.of(IllegalStateException.class))
+                .exceptionPriority(ExceptionPriority.IGNORABLE)
+                .maxRequestExecutionDuration(null)
+                .build();
+
+        assertThat(config.isRequestTimerEnable()).isFalse();
+    }
+
+    @Test
+    @DisplayName("UT: SlowRequestException should be added to observable exceptions when timer is enabled")
+    void testSlowRequestExceptionAddedWhenTimerEnabled() {
+        CircuitBreakerConfiguration config = baseBuilder()
+                .observableExceptions(Set.of(IllegalArgumentException.class))
+                .ignorableExceptions(Set.of(IllegalStateException.class))
+                .exceptionPriority(ExceptionPriority.IGNORABLE)
+                .maxRequestExecutionDuration(Duration.ofSeconds(1))
+                .build();
+        assertThat(config.getObservableExceptions()).contains(SlowRequestException.class, IllegalArgumentException.class);
+    }
+
+    @Test
+    @DisplayName("UT: SlowRequestException should not be added to observable exceptions when timer is disabled")
+    void testSlowRequestExceptionNotAddedWhenTimerDisabled() {
+        CircuitBreakerConfiguration config = baseBuilder()
+                .observableExceptions(Set.of(IllegalArgumentException.class))
+                .ignorableExceptions(Set.of(IllegalStateException.class))
+                .exceptionPriority(ExceptionPriority.IGNORABLE)
+                .maxRequestExecutionDuration(null)
+                .build();
+
+        assertThat(config.getObservableExceptions()).doesNotContain(SlowRequestException.class);
+        assertThat(config.getObservableExceptions()).contains(IllegalArgumentException.class);
+    }
+
+    @Test
+    @DisplayName("UT: SlowRequestException should not be added to observable exceptions when it is ignorable")
+    void testSlowRequestExceptionNotAddedWhenIgnorable() {
+        CircuitBreakerConfiguration config = baseBuilder()
+                .observableExceptions(Set.of(IllegalArgumentException.class))
+                .ignorableExceptions(Set.of(IllegalStateException.class, SlowRequestException.class))
+                .exceptionPriority(ExceptionPriority.IGNORABLE)
+                .maxRequestExecutionDuration(Duration.ofSeconds(1))
+                .build();
+
+        assertThat(config.getObservableExceptions()).doesNotContain(SlowRequestException.class);
+        assertThat(config.getObservableExceptions()).contains(IllegalArgumentException.class);
+        assertThat(config.getIgnorableExceptions()).contains(IllegalStateException.class, SlowRequestException.class);
     }
 }

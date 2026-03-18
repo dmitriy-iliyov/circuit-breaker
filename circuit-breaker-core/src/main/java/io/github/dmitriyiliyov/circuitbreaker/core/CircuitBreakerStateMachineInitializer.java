@@ -1,23 +1,29 @@
 package io.github.dmitriyiliyov.circuitbreaker.core;
 
+import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.RequestTimer;
+
 /**
- * Assembles the state machine for a {@link CircuitBreaker}.
+ * A utility class for assembling the state machine of a {@link CircuitBreaker}.
  * <p>
- * Connects the {@link CloseState}, {@link OpenState}, and {@link HalfOpenState}
- * and sets the initial state on the circuit breaker.
+ * This class links the different states ({@link CloseState}, {@link OpenState}, {@link HalfOpenState})
+ * together and sets the initial state on the circuit breaker instance.
  */
 public final class CircuitBreakerStateMachineInitializer {
 
+    private CircuitBreakerStateMachineInitializer() {}
+
     /**
-     * Assembles a three-state machine (Close, Open, Half-Open).
+     * Initializes a standard three-state machine (Close -> Open -> Half-Open -> Close).
      *
-     * @param circuitBreaker The circuit breaker to configure.
-     * @param strategies     The strategies for each state.
+     * @param circuitBreaker The circuit breaker instance to initialize.
+     * @param strategies     A container with the strategies for each state.
+     * @param requestTimer   A timer to measure request duration, used by some strategies.
      */
-    public static void init(ConfigurableCircuitBreaker circuitBreaker, Strategies strategies) {
+    public static void init(ConfigurableCircuitBreaker circuitBreaker, Strategies strategies, RequestTimer requestTimer) {
         CircuitState halfOpenState = new HalfOpenState(
                 (CircuitBreaker) circuitBreaker,
-                strategies.halfOpenStateStrategy()
+                strategies.halfOpenStateStrategy(),
+                requestTimer
         );
 
         CircuitState openState = new OpenState(
@@ -29,7 +35,8 @@ public final class CircuitBreakerStateMachineInitializer {
         CircuitState closeState = new CloseState(
                 (CircuitBreaker) circuitBreaker,
                 openState,
-                strategies.closeStateStrategy()
+                strategies.closeStateStrategy(),
+                requestTimer
         );
 
         ((ConfigurableHalfOpenState) halfOpenState).setCloseState(closeState);
@@ -39,15 +46,17 @@ public final class CircuitBreakerStateMachineInitializer {
     }
 
     /**
-     * Assembles a two-state machine (Close, Open), skipping the Half-Open state.
+     * Initializes a simplified two-state machine (Close -> Open -> Close), skipping the Half-Open state.
      *
-     * @param circuitBreaker The circuit breaker to configure.
-     * @param strategies     The strategies for the open and close states.
+     * @param circuitBreaker The circuit breaker instance to initialize.
+     * @param strategies     A container with the strategies for the open and close states.
+     * @param requestTimer   A timer to measure request duration, used by some strategies.
      */
-    public static void initWithoutHalfOpenState(ConfigurableCircuitBreaker circuitBreaker, Strategies strategies) {
+    public static void initWithoutHalfOpenState(ConfigurableCircuitBreaker circuitBreaker, Strategies strategies, RequestTimer requestTimer) {
         CircuitState closeState = new CloseState(
                 (CircuitBreaker) circuitBreaker,
-                strategies.closeStateStrategy()
+                strategies.closeStateStrategy(),
+                requestTimer
         );
 
         CircuitState openState = new OpenState(
