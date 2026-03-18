@@ -224,7 +224,7 @@ public class HalfOpenStateUnitTests {
     }
 
     @Nested
-    @DisplayName("UT:  for RequestTimer interaction")
+    @DisplayName("UT: for RequestTimer interaction")
     class RequestTimerTests {
 
         @BeforeEach

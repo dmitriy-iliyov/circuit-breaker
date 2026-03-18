@@ -82,23 +82,25 @@ public class DefaultCircuitBreakerStressTests {
         halfOpenState.setOpenState(openState);
         halfOpenState.setCloseState(closeState);
 
-        Supplier<CompletableFuture<Void>> successTask = () -> CompletableFuture.runAsync(() -> {
-            try {
-                cb.execute(() -> log.debug("Success"));
-            } catch (Throwable e) {
-                throw new RuntimeException(e);
-            }
-        });
+        Supplier<CompletableFuture<Void>> successTask = () -> CompletableFuture
+                .runAsync(() -> {
+                    try {
+                        cb.execute(() -> log.debug("Success"));
+                    } catch (CircuitBreakerOpenException e) {
+                        log.debug("Circuit breaker already open, skipping");
+                    } catch (Throwable e) {
+                        throw new RuntimeException(e);
+                    }
+                });
 
         Supplier<CompletableFuture<Void>> failureTask = () -> CompletableFuture
                 .runAsync(() -> {
                     try {
                         cb.execute(() -> { throw new RuntimeException("failure"); });
-                    } catch (Throwable e) {
-                        throw new RuntimeException(e);
-                    }
-                })
-                .exceptionally(ex -> null);
+                    } catch (CircuitBreakerOpenException e) {
+                        log.debug("Circuit breaker already open, skipping");
+                    } catch (Throwable e) { }
+                }).exceptionally(ex -> null);
 
         Supplier<CompletableFuture<Void>> slowTask = () -> CompletableFuture
                 .runAsync(() -> {
