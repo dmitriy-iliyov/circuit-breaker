@@ -9,8 +9,6 @@
 ## Overview
 This library is an exploratory implementation of the [Circuit Breaker Pattern](https://microservices.io/patterns/reliability/circuit-breaker.html) in Java, designed to improve system resilience by preventing cascading failures. It is not intended as a replacement for mature libraries like Resilience4j but serves as a research project that may be suitable for small to medium-sized applications where its specific design trade-offs are a good fit.
 
-The core of the library is a state machine (`CLOSE`, `OPEN`, `HALF_OPEN`) where transitions are managed by highly configurable and pluggable observation strategies. This design allows for precise control over the circuit's behavior and enables high-performance, low-latency scenarios through lock-free strategy implementations, ensuring minimal overhead while maintaining resilience.
-
 ## Key Features
 - **State-driven Architecture**: Follows a clear state machine (`CLOSE`, `OPEN`, `HALF_OPEN`) for predictable behavior.
 - **Centralized Management**: A `CircuitBreakerRegistry` to manage and access multiple circuit breaker instances in your application.
