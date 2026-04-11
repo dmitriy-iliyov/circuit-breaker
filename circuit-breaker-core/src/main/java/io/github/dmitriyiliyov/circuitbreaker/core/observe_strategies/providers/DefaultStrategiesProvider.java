@@ -6,31 +6,22 @@ import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.CloseState
 import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.HalfOpenStateStrategy;
 import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.OpenStateStrategy;
 
-import java.util.EnumMap;
-import java.util.List;
-import java.util.Map;
-import java.util.ServiceLoader;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public final class DefaultStrategiesProvider implements StrategiesProvider {
 
     private final Map<CircuitStateType, List<StrategyProvider>> providers;
 
-    DefaultStrategiesProvider(Map<CircuitStateType, List<StrategyProvider>> providers) {
-        this.providers = providers;
-    }
-
-    public DefaultStrategiesProvider() {
-        this.providers = ServiceLoader
-                .load(StrategyProvider.class)
-                .stream()
-                .map(ServiceLoader.Provider::get)
-                .collect(
+    public DefaultStrategiesProvider(List<StrategyProvider> providers) {
+        this.providers = providers.stream()
+                .collect(Collectors.collectingAndThen(
                         Collectors.groupingBy(
                                 StrategyProvider::getStateType,
                                 () -> new EnumMap<>(CircuitStateType.class),
                                 Collectors.toList()
-                        )
+                        ),
+                        Collections::unmodifiableMap)
                 );
     }
 
@@ -59,5 +50,9 @@ public final class DefaultStrategiesProvider implements StrategiesProvider {
             }
         }
         throw new IllegalStateException("strategy provider not found for '%s' state".formatted(stateType.name()));
+    }
+
+    public List<StrategyProvider> getProviders() {
+        return providers.values().stream().flatMap(Collection::stream).toList();
     }
 }

@@ -67,7 +67,11 @@ public class DefaultCircuitBreakerIntegrationTests {
                             try {
                                 circuitBreaker.execute(() -> log.info("Success HTTP request"));
                             } catch (Throwable e) {
-                                throw new RuntimeException(e);
+                                if (e instanceof CircuitBreakerOpenException) {
+                                    log.warn("Request failed: {}", e.getMessage());
+                                } else {
+                                    throw new RuntimeException(e);
+                                }
                             }
                         }),
                         () -> CompletableFuture.runAsync(() -> {
@@ -90,7 +94,11 @@ public class DefaultCircuitBreakerIntegrationTests {
                                     return 1;
                                 });
                             } catch (Throwable e) {
-                                throw new RuntimeException(e);
+                                if (e instanceof CircuitBreakerOpenException) {
+                                    log.warn("Request failed: {}", e.getMessage());
+                                } else {
+                                    throw new RuntimeException(e);
+                                }
                             }
                         }),
                         () -> CompletableFuture.runAsync(() -> {

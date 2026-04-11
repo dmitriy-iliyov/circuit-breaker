@@ -9,9 +9,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
-import java.util.EnumMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -32,19 +30,13 @@ class DefaultStrategiesProviderUnitTests {
         when(closeProvider.getStateType()).thenReturn(CircuitStateType.CLOSE);
         when(halfOpenProvider.getStateType()).thenReturn(CircuitStateType.HALF_OPEN);
         when(openProvider.getStateType()).thenReturn(CircuitStateType.OPEN);
-
-        Map<CircuitStateType, List<StrategyProvider>> map = new EnumMap<>(CircuitStateType.class);
-        map.put(CircuitStateType.CLOSE, List.of(closeProvider));
-        map.put(CircuitStateType.HALF_OPEN, List.of(halfOpenProvider));
-        map.put(CircuitStateType.OPEN, List.of(openProvider));
-        return new DefaultStrategiesProvider(map);
+        return new DefaultStrategiesProvider(List.of(closeProvider, openProvider, halfOpenProvider));
     }
 
     private DefaultStrategiesProvider providerWithoutHalfOpen() {
-        Map<CircuitStateType, List<StrategyProvider>> map = new EnumMap<>(CircuitStateType.class);
-        map.put(CircuitStateType.CLOSE, List.of(closeProvider));
-        map.put(CircuitStateType.OPEN, List.of(openProvider));
-        return new DefaultStrategiesProvider(map);
+        when(closeProvider.getStateType()).thenReturn(CircuitStateType.CLOSE);
+        when(openProvider.getStateType()).thenReturn(CircuitStateType.OPEN);
+        return new DefaultStrategiesProvider(List.of(closeProvider, openProvider));
     }
 
     private CircuitBreakerConfiguration configWithHalfOpen() {
@@ -113,11 +105,12 @@ class DefaultStrategiesProviderUnitTests {
         CircuitBreakerConfiguration config = configWithoutHalfOpen();
 
         StrategyProvider secondCloseProvider = mock(StrategyProvider.class);
+        when(secondCloseProvider.getStateType()).thenReturn(CircuitStateType.CLOSE);
 
-        Map<CircuitStateType, List<StrategyProvider>> map = new EnumMap<>(CircuitStateType.class);
-        map.put(CircuitStateType.CLOSE, List.of(closeProvider, secondCloseProvider));
-        map.put(CircuitStateType.OPEN, List.of(openProvider));
-        DefaultStrategiesProvider provider = new DefaultStrategiesProvider(map);
+        when(closeProvider.getStateType()).thenReturn(CircuitStateType.CLOSE);
+        when(openProvider.getStateType()).thenReturn(CircuitStateType.OPEN);
+
+        DefaultStrategiesProvider provider = new DefaultStrategiesProvider(List.of(closeProvider, secondCloseProvider, openProvider));
 
         when(closeProvider.supports(config)).thenReturn(true);
         when(closeProvider.getStrategy(config)).thenReturn(closeStrategy);
@@ -136,12 +129,14 @@ class DefaultStrategiesProviderUnitTests {
         CircuitBreakerConfiguration config = configWithoutHalfOpen();
 
         StrategyProvider fallbackCloseProvider = mock(StrategyProvider.class);
+        when(fallbackCloseProvider.getStateType()).thenReturn(CircuitStateType.CLOSE);
+
         CloseStateStrategy fallbackStrategy = mock(CloseStateStrategy.class);
 
-        Map<CircuitStateType, List<StrategyProvider>> map = new EnumMap<>(CircuitStateType.class);
-        map.put(CircuitStateType.CLOSE, List.of(closeProvider, fallbackCloseProvider));
-        map.put(CircuitStateType.OPEN, List.of(openProvider));
-        DefaultStrategiesProvider provider = new DefaultStrategiesProvider(map);
+        when(closeProvider.getStateType()).thenReturn(CircuitStateType.CLOSE);
+        when(openProvider.getStateType()).thenReturn(CircuitStateType.OPEN);
+
+        DefaultStrategiesProvider provider = new DefaultStrategiesProvider(List.of(closeProvider, fallbackCloseProvider, openProvider));
 
         when(closeProvider.supports(config)).thenReturn(false);
         when(fallbackCloseProvider.supports(config)).thenReturn(true);
@@ -174,9 +169,9 @@ class DefaultStrategiesProviderUnitTests {
     void findStrategyProvider_shouldThrowWhenStateTypeHasNoProviders() {
         CircuitBreakerConfiguration config = configWithoutHalfOpen();
 
-        Map<CircuitStateType, List<StrategyProvider>> map = new EnumMap<>(CircuitStateType.class);
-        map.put(CircuitStateType.OPEN, List.of(openProvider));
-        DefaultStrategiesProvider provider = new DefaultStrategiesProvider(map);
+        when(openProvider.getStateType()).thenReturn(CircuitStateType.OPEN);
+
+        DefaultStrategiesProvider provider = new DefaultStrategiesProvider(List.of(openProvider));
 
         when(openProvider.supports(config)).thenReturn(true);
         when(openProvider.getStrategy(config)).thenReturn(openStrategy);
