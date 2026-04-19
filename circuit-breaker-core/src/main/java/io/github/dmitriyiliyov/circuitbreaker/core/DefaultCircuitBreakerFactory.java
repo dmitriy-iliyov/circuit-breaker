@@ -29,10 +29,12 @@ public final class DefaultCircuitBreakerFactory implements CircuitBreakerFactory
         );
         Strategies strategies = strategiesProvider.getStrategies(configuration);
         RequestTimer requestTimer = RequestTimerFactory.of(configuration);
-        if (configuration.isHalfOpenStateEnabled()) {
-            CircuitBreakerStateMachineInitializer.init(circuitBreaker, strategies, requestTimer);
+        if (configuration.getHalfOpenStateConfiguration().isHalfOpenStateEnabled()) {
+            CircuitBreakerStateMachineInitializer.initWithHalfOpen(
+                    circuitBreaker, strategies, requestTimer, configuration.getHalfOpenStateConfiguration()
+            );
         } else {
-            CircuitBreakerStateMachineInitializer.initWithoutHalfOpenState(circuitBreaker, strategies, requestTimer);
+            CircuitBreakerStateMachineInitializer.initWithoutHalfOpen(circuitBreaker, strategies, requestTimer);
         }
         return (CircuitBreaker) circuitBreaker;
     }

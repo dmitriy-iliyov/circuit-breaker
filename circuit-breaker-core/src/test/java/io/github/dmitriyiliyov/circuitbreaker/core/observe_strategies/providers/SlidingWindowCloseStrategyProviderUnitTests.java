@@ -28,7 +28,7 @@ class SlidingWindowCloseStrategyProviderUnitTests {
     @Test
     @DisplayName("getStrategy: should return SlidingWindowCloseStrategy for valid config")
     void getStrategy_shouldReturnCorrectStrategy() {
-        when(config.getCloseState()).thenReturn(closeStateConfig);
+        when(config.getCloseStateConfiguration()).thenReturn(closeStateConfig);
         when(config.getLockFree()).thenReturn(false);
         when(closeStateConfig.getWindowSize()).thenReturn(10);
         when(closeStateConfig.getExceptionCountThreshold()).thenReturn(5);
@@ -42,7 +42,7 @@ class SlidingWindowCloseStrategyProviderUnitTests {
     @Test
     @DisplayName("getStrategy: should throw exception for unsupported config")
     void getStrategy_shouldThrowException_forUnsupportedConfig() {
-        when(config.getCloseState()).thenReturn(closeStateConfig);
+        when(config.getCloseStateConfiguration()).thenReturn(closeStateConfig);
         when(config.getLockFree()).thenReturn(true); // Invalid config
 
         assertThatThrownBy(() -> provider.getStrategy(config))
@@ -61,7 +61,7 @@ class SlidingWindowCloseStrategyProviderUnitTests {
     @Test
     @DisplayName("supports: should throw exception for null close state configuration")
     void supports_shouldThrowException_forNullCloseStateConfiguration() {
-        when(config.getCloseState()).thenReturn(null);
+        when(config.getCloseStateConfiguration()).thenReturn(null);
         assertThatThrownBy(() -> provider.supports(config))
                 .isInstanceOf(NullPointerException.class)
                 .hasMessage("close state configuration cannot be null");
@@ -70,7 +70,7 @@ class SlidingWindowCloseStrategyProviderUnitTests {
     @Test
     @DisplayName("supports: should return false if lock-free mode is enabled")
     void supports_shouldReturnFalse_ifLockFreeIsEnabled() {
-        when(config.getCloseState()).thenReturn(closeStateConfig);
+        when(config.getCloseStateConfiguration()).thenReturn(closeStateConfig);
         when(config.getLockFree()).thenReturn(true);
 
         assertThat(provider.supports(config)).isFalse();
@@ -79,7 +79,7 @@ class SlidingWindowCloseStrategyProviderUnitTests {
     @Test
     @DisplayName("supports: should return false if window size is null")
     void supports_shouldReturnFalse_ifWindowSizeIsNull() {
-        when(config.getCloseState()).thenReturn(closeStateConfig);
+        when(config.getCloseStateConfiguration()).thenReturn(closeStateConfig);
         when(config.getLockFree()).thenReturn(false);
         when(closeStateConfig.getWindowSize()).thenReturn(null);
 
@@ -89,7 +89,7 @@ class SlidingWindowCloseStrategyProviderUnitTests {
     @Test
     @DisplayName("supports: should return false if exception count threshold is null")
     void supports_shouldReturnFalse_ifExceptionCountThresholdIsNull() {
-        when(config.getCloseState()).thenReturn(closeStateConfig);
+        when(config.getCloseStateConfiguration()).thenReturn(closeStateConfig);
         when(config.getLockFree()).thenReturn(false);
         when(closeStateConfig.getWindowSize()).thenReturn(10);
         when(closeStateConfig.getExceptionCountThreshold()).thenReturn(null);
@@ -100,7 +100,7 @@ class SlidingWindowCloseStrategyProviderUnitTests {
     @Test
     @DisplayName("supports: should return false if initial delay is null")
     void supports_shouldReturnFalse_ifInitialDelayIsNull() {
-        when(config.getCloseState()).thenReturn(closeStateConfig);
+        when(config.getCloseStateConfiguration()).thenReturn(closeStateConfig);
         when(config.getLockFree()).thenReturn(false);
         when(closeStateConfig.getWindowSize()).thenReturn(10);
         when(closeStateConfig.getExceptionCountThreshold()).thenReturn(5);
@@ -112,7 +112,7 @@ class SlidingWindowCloseStrategyProviderUnitTests {
     @Test
     @DisplayName("supports: should return true for valid configuration")
     void supports_shouldReturnTrue_forValidConfiguration() {
-        when(config.getCloseState()).thenReturn(closeStateConfig);
+        when(config.getCloseStateConfiguration()).thenReturn(closeStateConfig);
         when(config.getLockFree()).thenReturn(false);
         when(closeStateConfig.getWindowSize()).thenReturn(10);
         when(closeStateConfig.getExceptionCountThreshold()).thenReturn(5);

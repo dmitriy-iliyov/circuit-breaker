@@ -30,7 +30,7 @@ public final class DefaultStrategiesProvider implements StrategiesProvider {
         CloseStateStrategy closeStateStrategy = (CloseStateStrategy) findStrategyProvider(CircuitStateType.CLOSE, configuration)
                 .getStrategy(configuration);
         HalfOpenStateStrategy halfOpenStateStrategy = null;
-        if (configuration.isHalfOpenStateEnabled()) {
+        if (configuration.getHalfOpenStateConfiguration().isHalfOpenStateEnabled()) {
             halfOpenStateStrategy = (HalfOpenStateStrategy) findStrategyProvider(CircuitStateType.HALF_OPEN, configuration)
                     .getStrategy(configuration);
         }

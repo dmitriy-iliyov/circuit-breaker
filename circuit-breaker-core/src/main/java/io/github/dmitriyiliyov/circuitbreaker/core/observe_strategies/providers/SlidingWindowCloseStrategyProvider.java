@@ -16,7 +16,7 @@ public class SlidingWindowCloseStrategyProvider implements StrategyProvider {
     @Override
     public boolean supports(CircuitBreakerConfiguration configuration) {
         Objects.requireNonNull(configuration, "configuration cannot be null");
-        CloseStateConfiguration closeStateConfiguration = configuration.getCloseState();
+        CloseStateConfiguration closeStateConfiguration = configuration.getCloseStateConfiguration();
         Objects.requireNonNull(closeStateConfiguration, "close state configuration cannot be null");
         return !configuration.getLockFree() &&
                 closeStateConfiguration.getWindowSize() != null &&
@@ -26,7 +26,7 @@ public class SlidingWindowCloseStrategyProvider implements StrategyProvider {
 
     @Override
     public Object getStrategy(CircuitBreakerConfiguration configuration) {
-        CloseStateConfiguration closeStateConfiguration = configuration.getCloseState();
+        CloseStateConfiguration closeStateConfiguration = configuration.getCloseStateConfiguration();
         if (supports(configuration)) {
             return new SlidingWindowCloseStrategy(
                     closeStateConfiguration.getWindowSize(),

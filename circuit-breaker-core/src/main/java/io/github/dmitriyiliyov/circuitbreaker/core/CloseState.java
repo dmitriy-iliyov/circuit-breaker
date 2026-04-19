@@ -14,6 +14,9 @@ public class CloseState implements CircuitState, ConfigurableCircuitState {
     private final RequestTimer timer;
     private final Function<Throwable, Boolean> checker;
 
+    /**
+     * Partly constructor only for using in {@link CircuitBreakerStateMachineInitializer}
+     */
     CloseState(CircuitBreaker circuitBreaker, CloseStateStrategy strategy, RequestTimer timer) {
         this.circuitBreaker = Objects.requireNonNull(circuitBreaker, "circuitBreaker cannot be null");
         this.strategy = Objects.requireNonNull(strategy, "strategy cannot be null");

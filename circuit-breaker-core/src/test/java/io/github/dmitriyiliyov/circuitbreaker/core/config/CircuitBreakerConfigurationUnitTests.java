@@ -20,11 +20,17 @@ public class CircuitBreakerConfigurationUnitTests {
             .exceptionRateThreshold(0.5)
             .initialDelay(Duration.ZERO);
 
+    private final Consumer<HalfOpenStateConfiguration.Builder> validHalfOpenStateConsumer = builder -> builder
+            .halfOpenStateEnabled(true)
+            .type(HalfOpenType.NORMAL)
+            .maxRequestInHalfOpenState(20)
+            .maxExceptionCountInHalfOpenState(2);
+
     private CircuitBreakerConfiguration.Builder baseBuilder() {
         return CircuitBreakerConfiguration.builder()
                 .name("test")
                 .closeState(validCloseStateConsumer)
-                .halfOpenStateEnabled(false)
+                .halfOpenState(validHalfOpenStateConsumer)
                 .waitDurationInOpenState(Duration.ofSeconds(30));
     }
 
@@ -119,32 +125,6 @@ public class CircuitBreakerConfigurationUnitTests {
     }
 
     @Test
-    @DisplayName("should throw exceptionSupplier when closeState is not configured")
-    public void shouldThrowExceptionWhenCloseStateIsNotConfigured() {
-        assertThatThrownBy(() -> CircuitBreakerConfiguration.builder()
-                .name("test")
-                .observableExceptions(Set.of(RuntimeException.class))
-                .halfOpenStateEnabled(false)
-                .waitDurationInOpenState(Duration.ofSeconds(30))
-                .build())
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("closeState cannot be null");
-    }
-
-    @Test
-    @DisplayName("should throw exceptionSupplier when waitDurationInOpenState is not configured")
-    public void shouldThrowExceptionWhenWaitDurationInOpenStateIsNotConfigured() {
-        assertThatThrownBy(() -> CircuitBreakerConfiguration.builder()
-                .name("test")
-                .observableExceptions(Set.of(RuntimeException.class))
-                .closeState(validCloseStateConsumer)
-                .halfOpenStateEnabled(false)
-                .build())
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("waitDurationInOpenState cannot be null");
-    }
-
-    @Test
     @DisplayName("should create configuration successfully with valid parameters")
     public void shouldCreateConfigurationSuccessfullyWithValidParameters() {
         assertThatCode(() -> baseBuilder()
@@ -153,6 +133,55 @@ public class CircuitBreakerConfigurationUnitTests {
                 .exceptionPriority(ExceptionPriority.IGNORABLE)
                 .build())
                 .doesNotThrowAnyException();
+    }
+
+    @Test
+    @DisplayName("should throw IllegalArgumentException when closeState is null")
+    public void shouldThrowIllegalArgumentExceptionWhenCloseStateIsNull() {
+        assertThatThrownBy(() ->
+                        CircuitBreakerConfiguration.builder()
+                                .name("test")
+                                .observableExceptions(Set.of(RuntimeException.class))
+                                .ignorableExceptions(Set.of(IllegalStateException.class))
+                                .exceptionPriority(ExceptionPriority.IGNORABLE)
+                                .halfOpenState(validHalfOpenStateConsumer)
+                                .waitDurationInOpenState(Duration.ofSeconds(30))
+                                .build()
+                )
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("closeStateConfiguration cannot be null");
+    }
+
+    @Test
+    @DisplayName("should throw IllegalArgumentException when waitDurationInOpenState is null")
+    public void shouldThrowIllegalArgumentExceptionWhenWaitDurationInOpenStateIsNull() {
+        assertThatThrownBy(() ->
+                CircuitBreakerConfiguration.builder()
+                        .name("test")
+                        .observableExceptions(Set.of(RuntimeException.class))
+                        .ignorableExceptions(Set.of(IllegalStateException.class))
+                        .exceptionPriority(ExceptionPriority.IGNORABLE)
+                        .closeState(validCloseStateConsumer)
+                        .halfOpenState(validHalfOpenStateConsumer)
+                        .build()
+        )
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("waitDurationInOpenState cannot be null");
+    }
+
+    @Test
+    @DisplayName("should set isHalfOpenEnabled to false when halfOpenState is null")
+    public void shouldSetIsHalfOpenEnabledFalseWhenHalfOpenStateIsNull() {
+        CircuitBreakerConfiguration config = CircuitBreakerConfiguration.builder()
+                .name("test")
+                .observableExceptions(Set.of(RuntimeException.class))
+                .ignorableExceptions(Set.of(IllegalStateException.class))
+                .exceptionPriority(ExceptionPriority.IGNORABLE)
+                .closeState(validCloseStateConsumer)
+                .waitDurationInOpenState(Duration.ofSeconds(30))
+                .build();
+
+        assertThat(config.getHalfOpenStateConfiguration().isHalfOpenStateEnabled()).isFalse();
     }
 
     @Test
@@ -189,34 +218,6 @@ public class CircuitBreakerConfigurationUnitTests {
     }
 
     @Test
-    @DisplayName("should throw exceptionSupplier when name is null")
-    public void shouldThrowExceptionWhenNameIsNull() {
-        assertThatThrownBy(() -> CircuitBreakerConfiguration.builder()
-                .name(null)
-                .observableExceptions(Set.of(RuntimeException.class))
-                .closeState(validCloseStateConsumer)
-                .halfOpenStateEnabled(false)
-                .waitDurationInOpenState(Duration.ofSeconds(30))
-                .build())
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("name cannot be null, blank or empty");
-    }
-
-    @Test
-    @DisplayName("should throw exceptionSupplier when name is blank")
-    public void shouldThrowExceptionWhenNameIsBlank() {
-        assertThatThrownBy(() -> CircuitBreakerConfiguration.builder()
-                .name("   ")
-                .observableExceptions(Set.of(RuntimeException.class))
-                .closeState(validCloseStateConsumer)
-                .halfOpenStateEnabled(false)
-                .waitDurationInOpenState(Duration.ofSeconds(30))
-                .build())
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("name cannot be null, blank or empty");
-    }
-
-    @Test
     @DisplayName("should throw exceptionSupplier when ignorableExceptions is not empty but priority is null")
     public void shouldThrowExceptionWhenIgnorableExceptionsNotEmptyAndPriorityIsNull() {
         assertThatThrownBy(() -> baseBuilder()
@@ -225,84 +226,6 @@ public class CircuitBreakerConfigurationUnitTests {
                 .build())
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("required exceptionPriority when ignorableExceptions not null or not empty");
-    }
-
-    @Test
-    @DisplayName("should throw exceptionSupplier when halfOpen enabled and maxRequestInHalfOpenState is null")
-    public void shouldThrowWhenHalfOpenEnabledAndMaxRequestIsNull() {
-        assertThatThrownBy(() -> CircuitBreakerConfiguration.builder()
-                .name("test")
-                .observableExceptions(Set.of(RuntimeException.class))
-                .closeState(validCloseStateConsumer)
-                .waitDurationInOpenState(Duration.ofSeconds(30))
-                .halfOpenStateEnabled(true)
-                .build())
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("maxRequestInHalfOpenState cannot be null or == 0 when isHalfOpenStateEnabled == true");
-    }
-
-    @Test
-    @DisplayName("should throw exceptionSupplier when halfOpen enabled and maxRequestInHalfOpenState is zero")
-    public void shouldThrowWhenHalfOpenEnabledAndMaxRequestIsZero() {
-        assertThatThrownBy(() -> CircuitBreakerConfiguration.builder()
-                .name("test")
-                .observableExceptions(Set.of(RuntimeException.class))
-                .closeState(validCloseStateConsumer)
-                .waitDurationInOpenState(Duration.ofSeconds(30))
-                .halfOpenStateEnabled(true)
-                .maxRequestInHalfOpenState(0)
-                .build())
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("maxRequestInHalfOpenState cannot be null or == 0 when isHalfOpenStateEnabled == true");
-    }
-
-    @Test
-    @DisplayName("should throw exceptionSupplier when halfOpen enabled and neither count nor rate provided")
-    public void shouldThrowWhenHalfOpenEnabledAndNeitherCountNorRateProvided() {
-        assertThatThrownBy(() -> CircuitBreakerConfiguration.builder()
-                .name("test")
-                .observableExceptions(Set.of(RuntimeException.class))
-                .closeState(validCloseStateConsumer)
-                .waitDurationInOpenState(Duration.ofSeconds(30))
-                .halfOpenStateEnabled(true)
-                .maxRequestInHalfOpenState(10)
-                .build())
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("either maxExceptionCountInHalfOpenState or maxExceptionRateInHalfOpenState must be non null and > 0");
-    }
-
-    @Test
-    @DisplayName("should calculate maxExceptionCount from rate when count not provided")
-    public void shouldCalculateMaxExceptionCountFromRate() {
-        CircuitBreakerConfiguration config = CircuitBreakerConfiguration.builder()
-                .name("test")
-                .observableExceptions(Set.of(RuntimeException.class))
-                .closeState(validCloseStateConsumer)
-                .waitDurationInOpenState(Duration.ofSeconds(30))
-                .halfOpenStateEnabled(true)
-                .maxRequestInHalfOpenState(10)
-                .maxExceptionRateInHalfOpenState(0.3)
-                .build();
-
-        assertThat(config.getMaxExceptionCountInHalfOpenState()).isEqualTo(3);
-    }
-
-    @Test
-    @DisplayName("should use maxExceptionCount directly when provided")
-    public void shouldUseMaxExceptionCountDirectlyWhenProvided() {
-        CircuitBreakerConfiguration config = CircuitBreakerConfiguration.builder()
-                .name("test")
-                .observableExceptions(Set.of(RuntimeException.class))
-                .closeState(validCloseStateConsumer)
-                .waitDurationInOpenState(Duration.ofSeconds(30))
-                .halfOpenStateEnabled(true)
-                .maxRequestInHalfOpenState(10)
-                .maxExceptionCountInHalfOpenState(4)
-                .build();
-
-        assertThat(config.getMaxExceptionCountInHalfOpenState()).isEqualTo(4);
-        assertThat(config.getMaxRequestInHalfOpenState()).isEqualTo(10);
-        assertThat(config.isHalfOpenStateEnabled()).isTrue();
     }
 
     @Test

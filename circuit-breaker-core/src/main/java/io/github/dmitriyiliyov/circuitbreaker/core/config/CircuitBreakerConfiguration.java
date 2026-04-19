@@ -15,11 +15,9 @@ public final class CircuitBreakerConfiguration {
     private final Set<Class<? extends Throwable>> observableExceptions;
     private final Set<Class<? extends Throwable>> ignorableExceptions;
     private final Boolean lockFree;
-    private final CloseStateConfiguration closeState;
+    private final CloseStateConfiguration closeStateConfiguration;
     private final Duration waitDurationInOpenState;
-    private final boolean isHalfOpenStateEnabled;
-    private final int maxRequestInHalfOpenState;
-    private final int maxExceptionCountInHalfOpenState;
+    private final HalfOpenStateConfiguration halfOpenStateConfiguration;
     private final boolean isRequestTimerEnable;
     private final Duration maxRequestExecutionDuration;
 
@@ -28,11 +26,8 @@ public final class CircuitBreakerConfiguration {
                                         Set<Class<? extends Throwable>> ignorableExceptions,
                                         ExceptionPriority exceptionPriority,
                                         Boolean lockFree,
-                                        CloseStateConfiguration closeState,
-                                        Boolean isHalfOpenStateEnabled,
-                                        Integer maxRequestInHalfOpenState,
-                                        Integer maxExceptionCountInHalfOpenState,
-                                        Double maxExceptionRateInHalfOpenState,
+                                        CloseStateConfiguration closeStateConfiguration,
+                                        HalfOpenStateConfiguration halfOpenStateConfiguration,
                                         Duration waitDurationInOpenState,
                                         Duration maxRequestExecutionDuration) {
         if (name == null || name.isBlank()) {
@@ -64,36 +59,22 @@ public final class CircuitBreakerConfiguration {
 
         this.lockFree = lockFree == null || lockFree;
 
-        if (closeState == null) {
-            throw new IllegalArgumentException("closeState cannot be null");
+        if (closeStateConfiguration == null) {
+            throw new IllegalArgumentException("closeStateConfiguration cannot be null");
         }
-        this.closeState = closeState;
+        this.closeStateConfiguration = closeStateConfiguration;
 
         if (waitDurationInOpenState == null) {
             throw new IllegalArgumentException("waitDurationInOpenState cannot be null");
         }
         this.waitDurationInOpenState = waitDurationInOpenState;
 
-        this.isHalfOpenStateEnabled = isHalfOpenStateEnabled != null && isHalfOpenStateEnabled;
-        if (this.isHalfOpenStateEnabled && (maxRequestInHalfOpenState == null || maxRequestInHalfOpenState == 0)) {
-            throw new IllegalArgumentException("maxRequestInHalfOpenState cannot be null or == 0 when isHalfOpenStateEnabled == true");
-        } else if (!this.isHalfOpenStateEnabled) {
-            this.maxRequestInHalfOpenState = 0;
-            this.maxExceptionCountInHalfOpenState = 0;
+        if (halfOpenStateConfiguration == null) {
+            this.halfOpenStateConfiguration = HalfOpenStateConfiguration.builder()
+                    .halfOpenStateEnabled(false)
+                    .build();
         } else {
-            if (maxRequestInHalfOpenState < 0) {
-                throw new IllegalArgumentException("maxRequestInHalfOpenState cannot be < 0");
-            }
-            this.maxRequestInHalfOpenState = maxRequestInHalfOpenState;
-
-            boolean hasCount = maxExceptionCountInHalfOpenState != null && maxExceptionCountInHalfOpenState > 0;
-            boolean hasRate = maxExceptionRateInHalfOpenState != null && maxExceptionRateInHalfOpenState > 0;
-            if (!hasCount && !hasRate) {
-                throw new IllegalArgumentException("either maxExceptionCountInHalfOpenState or maxExceptionRateInHalfOpenState must be non null and > 0");
-            }
-            this.maxExceptionCountInHalfOpenState = hasCount
-                    ? maxExceptionCountInHalfOpenState
-                    : (int) Math.ceil(maxRequestInHalfOpenState * maxExceptionRateInHalfOpenState);
+            this.halfOpenStateConfiguration = halfOpenStateConfiguration;
         }
     }
 
@@ -163,24 +144,16 @@ public final class CircuitBreakerConfiguration {
         return lockFree;
     }
 
-    public CloseStateConfiguration getCloseState() {
-        return closeState;
-    }
-
-    public boolean isHalfOpenStateEnabled() {
-        return isHalfOpenStateEnabled;
-    }
-
-    public int getMaxRequestInHalfOpenState() {
-        return maxRequestInHalfOpenState;
-    }
-
-    public int getMaxExceptionCountInHalfOpenState() {
-        return maxExceptionCountInHalfOpenState;
+    public CloseStateConfiguration getCloseStateConfiguration() {
+        return closeStateConfiguration;
     }
 
     public Duration getWaitDurationInOpenState() {
         return waitDurationInOpenState;
+    }
+
+    public HalfOpenStateConfiguration getHalfOpenStateConfiguration() {
+        return halfOpenStateConfiguration;
     }
 
     public boolean isRequestTimerEnable() {
@@ -198,11 +171,9 @@ public final class CircuitBreakerConfiguration {
                 ", observableExceptions=" + observableExceptions +
                 ", ignorableExceptions=" + ignorableExceptions +
                 ", lockFree=" + lockFree +
-                ", closeState=" + closeState +
+                ", closeStateConfiguration=" + closeStateConfiguration +
                 ", waitDurationInOpenState=" + waitDurationInOpenState +
-                ", isHalfOpenStateEnabled=" + isHalfOpenStateEnabled +
-                ", maxRequestInHalfOpenState=" + maxRequestInHalfOpenState +
-                ", maxExceptionCountInHalfOpenState=" + maxExceptionCountInHalfOpenState +
+                ", halfOpenStateConfiguration=" + halfOpenStateConfiguration +
                 ", isRequestTimerEnable=" + isRequestTimerEnable +
                 ", maxRequestExecutionDuration=" + maxRequestExecutionDuration +
                 '}';
@@ -214,11 +185,9 @@ public final class CircuitBreakerConfiguration {
                 .observableExceptions(observableExceptions)
                 .ignorableExceptions(ignorableExceptions)
                 .lockFree(lockFree)
-                .closeState(closeState)
+                .closeState(closeStateConfiguration)
                 .waitDurationInOpenState(waitDurationInOpenState)
-                .halfOpenStateEnabled(isHalfOpenStateEnabled)
-                .maxRequestInHalfOpenState(maxRequestInHalfOpenState)
-                .maxExceptionCountInHalfOpenState(maxExceptionCountInHalfOpenState)
+                .halfOpenState(halfOpenStateConfiguration)
                 .maxRequestExecutionDuration(maxRequestExecutionDuration);
     }
 
@@ -235,10 +204,7 @@ public final class CircuitBreakerConfiguration {
         private Boolean lockFree;
         private CloseStateConfiguration closeState;
         private Duration waitDurationInOpenState;
-        private Boolean halfOpenStateEnabled;
-        private Integer maxRequestInHalfOpenState;
-        private Integer maxExceptionCountInHalfOpenState;
-        private Double maxExceptionRateInHalfOpenState;
+        private HalfOpenStateConfiguration halfOpenState;
         private Duration maxRequestExecutionDuration;
 
         public Builder name(String name) {
@@ -283,23 +249,15 @@ public final class CircuitBreakerConfiguration {
             return this;
         }
 
-        public Builder halfOpenStateEnabled(Boolean halfOpenStateEnabled) {
-            this.halfOpenStateEnabled = halfOpenStateEnabled;
+        public Builder halfOpenState(Consumer<HalfOpenStateConfiguration.Builder> builderConsumer) {
+            HalfOpenStateConfiguration.Builder builder = HalfOpenStateConfiguration.builder();
+            builderConsumer.accept(builder);
+            this.halfOpenState = builder.build();
             return this;
         }
 
-        public Builder maxRequestInHalfOpenState(Integer maxRequestInHalfOpenState) {
-            this.maxRequestInHalfOpenState = maxRequestInHalfOpenState;
-            return this;
-        }
-
-        public Builder maxExceptionCountInHalfOpenState(Integer maxExceptionCountInHalfOpenState) {
-            this.maxExceptionCountInHalfOpenState = maxExceptionCountInHalfOpenState;
-            return this;
-        }
-
-        public Builder maxExceptionRateInHalfOpenState(Double maxExceptionRateInHalfOpenState) {
-            this.maxExceptionRateInHalfOpenState = maxExceptionRateInHalfOpenState;
+        Builder halfOpenState(HalfOpenStateConfiguration halfOpenState) {
+            this.halfOpenState = halfOpenState;
             return this;
         }
 
@@ -316,10 +274,7 @@ public final class CircuitBreakerConfiguration {
                     exceptionPriority,
                     lockFree,
                     closeState,
-                    halfOpenStateEnabled,
-                    maxRequestInHalfOpenState,
-                    maxExceptionCountInHalfOpenState,
-                    maxExceptionRateInHalfOpenState,
+                    halfOpenState,
                     waitDurationInOpenState,
                     maxRequestExecutionDuration
             );

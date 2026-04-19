@@ -1,6 +1,7 @@
 package io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.providers;
 
 import io.github.dmitriyiliyov.circuitbreaker.core.config.CircuitBreakerConfiguration;
+import io.github.dmitriyiliyov.circuitbreaker.core.config.HalfOpenStateConfiguration;
 import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.CountBasedHalfOpenStrategy;
 
 import java.util.Objects;
@@ -15,20 +16,23 @@ public class CountBasedHalfOpenStrategyProvider implements StrategyProvider {
     @Override
     public boolean supports(CircuitBreakerConfiguration configuration) {
         Objects.requireNonNull(configuration, "configuration cannot be null");
-        if (!configuration.isHalfOpenStateEnabled()) {
+        HalfOpenStateConfiguration halfOpenStateConfiguration = Objects.requireNonNull(
+                configuration.getHalfOpenStateConfiguration(), "halfOpenStateConfiguration cannot be null"
+        );
+        if (!halfOpenStateConfiguration.isHalfOpenStateEnabled()) {
             return false;
         }
         return !configuration.getLockFree() &&
-                configuration.getMaxRequestInHalfOpenState() > 0 &&
-                configuration.getMaxExceptionCountInHalfOpenState() >= 0;
+                halfOpenStateConfiguration.getMaxRequestInHalfOpenState() > 0 &&
+                halfOpenStateConfiguration.getMaxExceptionCountInHalfOpenState() >= 0;
     }
 
     @Override
     public Object getStrategy(CircuitBreakerConfiguration configuration) {
         if (supports(configuration)) {
             return new CountBasedHalfOpenStrategy(
-                    configuration.getMaxRequestInHalfOpenState(),
-                    configuration.getMaxExceptionCountInHalfOpenState()
+                    configuration.getHalfOpenStateConfiguration().getMaxRequestInHalfOpenState(),
+                    configuration.getHalfOpenStateConfiguration().getMaxExceptionCountInHalfOpenState()
             );
         }
         throw new IllegalArgumentException("configuration %s don't supports".formatted(configuration));

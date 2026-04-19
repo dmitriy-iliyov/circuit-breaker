@@ -2,6 +2,7 @@ package io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.providers
 
 import io.github.dmitriyiliyov.circuitbreaker.core.Strategies;
 import io.github.dmitriyiliyov.circuitbreaker.core.config.CircuitBreakerConfiguration;
+import io.github.dmitriyiliyov.circuitbreaker.core.config.HalfOpenType;
 import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.CloseStateStrategy;
 import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.HalfOpenStateStrategy;
 import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.OpenStateStrategy;
@@ -44,9 +45,12 @@ class DefaultStrategiesProviderUnitTests {
                 .name("test")
                 .observableExceptions(Set.of(RuntimeException.class))
                 .closeState(b -> b.observeTime(Duration.ofSeconds(1)).exceptionRateThreshold(0.5).initialDelay(Duration.ZERO))
-                .halfOpenStateEnabled(true)
-                .maxRequestInHalfOpenState(10)
-                .maxExceptionCountInHalfOpenState(5)
+                .halfOpenState(halfOpenState -> halfOpenState
+                        .halfOpenStateEnabled(true)
+                        .type(HalfOpenType.NORMAL)
+                        .maxRequestInHalfOpenState(10)
+                        .maxExceptionCountInHalfOpenState(5)
+                )
                 .waitDurationInOpenState(Duration.ofSeconds(30))
                 .build();
     }
@@ -56,7 +60,6 @@ class DefaultStrategiesProviderUnitTests {
                 .name("test")
                 .observableExceptions(Set.of(RuntimeException.class))
                 .closeState(b -> b.observeTime(Duration.ofSeconds(1)).exceptionRateThreshold(0.5).initialDelay(Duration.ZERO))
-                .halfOpenStateEnabled(false)
                 .waitDurationInOpenState(Duration.ofSeconds(30))
                 .build();
     }

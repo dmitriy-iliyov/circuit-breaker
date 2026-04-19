@@ -119,7 +119,6 @@ public class DefaultCircuitBreakerIntegrationTests {
     @ParameterizedTest
     @DisplayName("IT: CLOSE -> OPEN -> HALF_OPEN -> CLOSE full cycle should complete successfully")
     public void stateMachine_fullCycleCloseToOpenToHalfOpenToClose_shouldSucceed(CompletableFutureSupplierPair<?> pair) throws Throwable {
-        // close state
         List<CompletableFuture<?>> closeStateFutures = new ArrayList<>();
         for (int i = 0; i < 16; i++) {
             closeStateFutures.add(pair.successSupplier().get());
@@ -130,12 +129,10 @@ public class DefaultCircuitBreakerIntegrationTests {
         CompletableFuture.allOf(closeStateFutures.toArray(new CompletableFuture[0])).join();
         assertThat(circuitBreaker.getState()).isInstanceOf(OpenState.class);
 
-        // open state
         Thread.sleep(Duration.ofSeconds(3).toMillis());
         circuitBreaker.execute(() -> log.info("Success HTTP request"));
         assertThat(circuitBreaker.getState()).isInstanceOf(HalfOpenState.class);
 
-        // half open state
         List<CompletableFuture<?>> halfOpenStateFutures = new ArrayList<>();
         for (int i = 0; i < 20; i++) {
             halfOpenStateFutures.add(pair.successSupplier().get());
@@ -144,14 +141,10 @@ public class DefaultCircuitBreakerIntegrationTests {
         assertThat(circuitBreaker.getState()).isInstanceOf(CloseState.class);
     }
 
-
-
     @MethodSource("attributes")
     @ParameterizedTest
     @DisplayName("IT: CLOSE -> OPEN -> HALF_OPEN -> OPEN -> HALF_OPEN -> CLOSE two full cycles should complete successfully")
     public void stateMachine_twoFullCycles_shouldSucceed(CompletableFutureSupplierPair<?> pair) throws Throwable {
-
-        // close state
         List<CompletableFuture<?>> closeStateFutures = new ArrayList<>();
         for (int i = 0; i < 4; i++) {
             closeStateFutures.add(pair.exceptionSupplier().get());
@@ -159,12 +152,10 @@ public class DefaultCircuitBreakerIntegrationTests {
         CompletableFuture.allOf(closeStateFutures.toArray(new CompletableFuture[0])).join();
         assertThat(circuitBreaker.getState()).isInstanceOf(OpenState.class);
 
-        // open state
         Thread.sleep(Duration.ofSeconds(3).toMillis());
         circuitBreaker.execute(() -> log.info("Success HTTP request"));
         assertThat(circuitBreaker.getState()).isInstanceOf(HalfOpenState.class);
 
-        // half open state
         List<CompletableFuture<?>> halfOpenStateFutures = new ArrayList<>();
         for (int i = 0; i < 2; i++) {
             halfOpenStateFutures.add(pair.exceptionSupplier().get());
@@ -172,12 +163,10 @@ public class DefaultCircuitBreakerIntegrationTests {
         CompletableFuture.allOf(halfOpenStateFutures.toArray(new CompletableFuture[0])).join();
         assertThat(circuitBreaker.getState()).isInstanceOf(OpenState.class);
 
-        // second open state
         Thread.sleep(Duration.ofSeconds(3).toMillis());
         circuitBreaker.execute(() -> log.info("Success HTTP request"));
         assertThat(circuitBreaker.getState()).isInstanceOf(HalfOpenState.class);
 
-        // second half open state
         List<CompletableFuture<?>> secondHalfOpenStateFutures = new ArrayList<>();
         for (int i = 0; i < 20; i++) {
             secondHalfOpenStateFutures.add(pair.successSupplier().get());
@@ -189,7 +178,6 @@ public class DefaultCircuitBreakerIntegrationTests {
     @Test
     @DisplayName("IT: CLOSE -> OPEN -> CLOSE without HALF_OPEN state should complete successfully")
     public void stateMachine_fullCycleWithoutHalfOpenState_shouldSucceed() throws Throwable {
-
         CircuitBreaker circuitBreaker = new DefaultCircuitBreaker(
                 Set.of(RuntimeException.class),
                 Set.of(ArrayIndexOutOfBoundsException.class)
@@ -213,7 +201,6 @@ public class DefaultCircuitBreakerIntegrationTests {
 
         ((ConfigurableCircuitState) closeState).setNextState(openState);
 
-        // close state
         List<CompletableFuture<Void>> closeStateFutures = new ArrayList<>();
         for (int i = 0; i < 16; i++) {
             closeStateFutures.add(CompletableFuture.runAsync(() -> {
@@ -241,7 +228,6 @@ public class DefaultCircuitBreakerIntegrationTests {
         CompletableFuture.allOf(closeStateFutures.toArray(new CompletableFuture[0])).join();
         assertThat(circuitBreaker.getState()).isInstanceOf(OpenState.class);
 
-        // open state
         Thread.sleep(Duration.ofSeconds(3).toMillis());
         circuitBreaker.execute(() -> log.info("Success HTTP request"));
         assertThat(circuitBreaker.getState()).isInstanceOf(CloseState.class);
@@ -250,7 +236,6 @@ public class DefaultCircuitBreakerIntegrationTests {
     @Test
     @DisplayName("IT: slow requests should be counted as failures and trigger OPEN state")
     public void stateMachine_slowRequestsCountedAsFailures_shouldTripToOpen() throws Throwable {
-
         CircuitBreaker circuitBreaker = new DefaultCircuitBreaker(
                 Set.of(RuntimeException.class, SlowRequestException.class),
                 Set.of(ArrayIndexOutOfBoundsException.class)
@@ -275,7 +260,6 @@ public class DefaultCircuitBreakerIntegrationTests {
 
         ((ConfigurableCircuitState) closeState).setNextState(openState);
 
-        // close state
         List<CompletableFuture<Void>> closeStateFutures = new ArrayList<>();
         for (int i = 0; i < 16; i++) {
             closeStateFutures.add(CompletableFuture.runAsync(() -> {
@@ -315,9 +299,119 @@ public class DefaultCircuitBreakerIntegrationTests {
         CompletableFuture.allOf(closeStateFutures.toArray(new CompletableFuture[0])).join();
         assertThat(circuitBreaker.getState()).isInstanceOf(OpenState.class);
 
-        // open state
         Thread.sleep(Duration.ofSeconds(3).toMillis());
         circuitBreaker.execute(() -> log.info("Success HTTP request"));
         assertThat(circuitBreaker.getState()).isInstanceOf(CloseState.class);
+    }
+
+    @Test
+    @DisplayName("IT: CLOSE -> OPEN -> GRADUAL_HALF_OPEN -> CLOSE full progressive cycle should succeed under concurrent load")
+    public void stateMachine_gradualHalfOpen_shouldProgressivelyRampUpToClose() throws Throwable {
+        CircuitBreaker cb = new DefaultCircuitBreaker(Set.of(RuntimeException.class), Set.of());
+        RequestTimer timer = new DefaultRequestTimer(Duration.ofSeconds(1));
+
+        HalfOpenStateStrategy strategy = new CountBasedHalfOpenStrategy(2, 1);
+        GradualHalfOpenState gradualState = new GradualHalfOpenState(cb, strategy, timer, 2.0);
+
+        CircuitState closeState = new CloseState(
+                cb,
+                new SlidingWindowCloseStrategy(1, 1, Duration.ZERO),
+                timer
+        );
+
+        CircuitState openState = new OpenState(
+                cb,
+                gradualState,
+                new TimeBasedOpenStrategy(Duration.ofMillis(100))
+        );
+
+        ((ConfigurableCircuitState) closeState).setNextState(openState);
+        gradualState.setCloseState(closeState);
+        gradualState.setOpenState(openState);
+        ((ConfigurableCircuitBreaker) cb).setState(closeState);
+
+        try {
+            cb.execute(() -> { throw new RuntimeException("Trip"); });
+        } catch (Throwable ignored) {}
+        assertThat(cb.getState()).isInstanceOf(OpenState.class);
+
+        Thread.sleep(150);
+        cb.execute(() -> "First success to transition");
+        assertThat(cb.getState()).isInstanceOf(GradualHalfOpenState.class);
+
+        java.util.concurrent.atomic.AtomicInteger successfulExecutions = new java.util.concurrent.atomic.AtomicInteger(0);
+        java.util.concurrent.atomic.AtomicInteger refusals = new java.util.concurrent.atomic.AtomicInteger(0);
+
+        List<CompletableFuture<Void>> futures = new ArrayList<>();
+        for (int i = 0; i < 200; i++) {
+            futures.add(CompletableFuture.runAsync(() -> {
+                try {
+                    cb.execute(() -> "Success");
+                    successfulExecutions.incrementAndGet();
+                } catch (GradualHalfOpenRefuseException e) {
+                    refusals.incrementAndGet();
+                } catch (Throwable t) {
+                    throw new RuntimeException(t);
+                }
+            }));
+        }
+
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+
+        assertThat(cb.getState()).isInstanceOf(CloseState.class);
+        assertThat(refusals.get()).isGreaterThan(0);
+        assertThat(successfulExecutions.get()).isGreaterThan(0);
+    }
+
+    @Test
+    @DisplayName("IT: GRADUAL_HALF_OPEN should trip back to OPEN if an exception passes the sampler under concurrent load")
+    public void stateMachine_gradualHalfOpen_shouldTripBackToOpenOnError() throws Throwable {
+        CircuitBreaker cb = new DefaultCircuitBreaker(Set.of(RuntimeException.class), Set.of());
+        RequestTimer timer = new DefaultRequestTimer(Duration.ofSeconds(1));
+
+        HalfOpenStateStrategy strategy = new CountBasedHalfOpenStrategy(10, 1);
+        GradualHalfOpenState gradualState = new GradualHalfOpenState(cb, strategy, timer, 2.0);
+
+        CircuitState closeState = new CloseState(
+                cb,
+                new SlidingWindowCloseStrategy(1, 1, Duration.ZERO),
+                timer
+        );
+
+        CircuitState openState = new OpenState(
+                cb,
+                gradualState,
+                new TimeBasedOpenStrategy(Duration.ofMillis(100))
+        );
+
+        ((ConfigurableCircuitState) closeState).setNextState(openState);
+        gradualState.setCloseState(closeState);
+        gradualState.setOpenState(openState);
+        ((ConfigurableCircuitBreaker) cb).setState(closeState);
+
+        try {
+            cb.execute(() -> { throw new RuntimeException("Trip"); });
+        } catch (Throwable ignored) {}
+        assertThat(cb.getState()).isInstanceOf(OpenState.class);
+
+        Thread.sleep(150);
+        cb.execute(() -> "First success to transition");
+        assertThat(cb.getState()).isInstanceOf(GradualHalfOpenState.class);
+
+        List<CompletableFuture<Void>> futures = new ArrayList<>();
+        for (int i = 0; i < 50; i++) {
+            futures.add(CompletableFuture.runAsync(() -> {
+                try {
+                    cb.execute(() -> { throw new RuntimeException("Fail"); });
+                } catch (RuntimeException ignore) {
+                } catch (Throwable t) {
+                    throw new RuntimeException(t);
+                }
+            }));
+        }
+
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+
+        assertThat(cb.getState()).isInstanceOf(OpenState.class);
     }
 }
