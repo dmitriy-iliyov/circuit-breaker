@@ -13,7 +13,7 @@ public interface CircuitBreakerFactory {
      * @param configuration The configuration to use.
      * @return A new {@link CircuitBreaker} instance.
      */
-    CircuitBreaker of(CircuitBreakerConfiguration configuration);
+    CircuitBreaker create(CircuitBreakerConfiguration configuration);
 
     /**
      * Creates a new {@link CircuitBreaker} that shares the state of an existing one.

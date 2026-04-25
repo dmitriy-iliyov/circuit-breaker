@@ -6,7 +6,7 @@ public final class RequestTimerFactory {
 
     private RequestTimerFactory() {}
 
-    public static RequestTimer of(CircuitBreakerConfiguration configuration) {
+    public static RequestTimer create(CircuitBreakerConfiguration configuration) {
         if (configuration.isRequestTimerEnable()) {
             return new DefaultRequestTimer(configuration.getMaxRequestExecutionDuration());
         }

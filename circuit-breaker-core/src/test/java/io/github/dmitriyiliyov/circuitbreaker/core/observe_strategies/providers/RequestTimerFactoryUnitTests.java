@@ -25,11 +25,11 @@ class RequestTimerFactoryUnitTests {
 
     @Test
     @DisplayName("UT: of(configuration) should return DefaultRequestTimer when timer is enabled")
-    void of_shouldReturnDefaultRequestTimer_whenEnabled() {
+    void create_shouldReturnDefaultRequestTimer_whenEnabled() {
         when(config.isRequestTimerEnable()).thenReturn(true);
         when(config.getMaxRequestExecutionDuration()).thenReturn(Duration.ofSeconds(1));
 
-        RequestTimer timer = RequestTimerFactory.of(config);
+        RequestTimer timer = RequestTimerFactory.create(config);
 
         assertThat(timer).isInstanceOf(DefaultRequestTimer.class);
         verify(config).isRequestTimerEnable();
@@ -39,10 +39,10 @@ class RequestTimerFactoryUnitTests {
 
     @Test
     @DisplayName("UT: of(configuration) should return NoopRequestTimer when timer is disabled")
-    void of_shouldReturnNoopRequestTimer_whenDisabled() {
+    void create_shouldReturnNoopRequestTimer_whenDisabled() {
         when(config.isRequestTimerEnable()).thenReturn(false);
 
-        RequestTimer timer = RequestTimerFactory.of(config);
+        RequestTimer timer = RequestTimerFactory.create(config);
 
         assertThat(timer).isInstanceOf(NoopRequestTimer.class);
         verify(config).isRequestTimerEnable();

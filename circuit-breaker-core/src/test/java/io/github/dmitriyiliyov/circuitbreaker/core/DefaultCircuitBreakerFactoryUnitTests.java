@@ -60,44 +60,44 @@ public class DefaultCircuitBreakerFactoryUnitTests {
 
     @Test
     @DisplayName("create: should return non-null CircuitBreaker")
-    public void of_shouldReturnNonNullCircuitBreaker() {
+    public void create_shouldReturnNonNullCircuitBreaker() {
         CircuitBreakerConfiguration config = configWithoutHalfOpen();
         when(strategiesProvider.getStrategies(config)).thenReturn(strategiesWithoutHalfOpen);
 
-        CircuitBreaker result = factory.of(config);
+        CircuitBreaker result = factory.create(config);
 
         assertThat(result).isNotNull();
     }
 
     @Test
     @DisplayName("create: should register circuit breaker in registry with config name")
-    public void of_shouldRegisterCircuitBreakerInRegistry() {
+    public void create_shouldRegisterCircuitBreakerInRegistry() {
         CircuitBreakerConfiguration config = configWithoutHalfOpen();
         when(strategiesProvider.getStrategies(config)).thenReturn(strategiesWithoutHalfOpen);
 
-        CircuitBreaker result = factory.of(config);
+        CircuitBreaker result = factory.create(config);
 
         verify(registry, times(1)).register(config, result);
     }
 
     @Test
     @DisplayName("create: should call getStrategies with configuration")
-    public void of_shouldCallGetStrategiesWithConfiguration() {
+    public void create_shouldCallGetStrategiesWithConfiguration() {
         CircuitBreakerConfiguration config = configWithoutHalfOpen();
         when(strategiesProvider.getStrategies(config)).thenReturn(strategiesWithoutHalfOpen);
 
-        factory.of(config);
+        factory.create(config);
 
         verify(strategiesProvider, times(1)).getStrategies(config);
     }
 
     @Test
     @DisplayName("create: should use init when halfOpenState is enabled")
-    public void of_shouldUseInitWhenHalfOpenStateEnabled() {
+    public void create_shouldUseInitWhenHalfOpenStateEnabled() {
         CircuitBreakerConfiguration config = configWithHalfOpen();
         when(strategiesProvider.getStrategies(config)).thenReturn(strategiesWithHalfOpen);
 
-        CircuitBreaker result = factory.of(config);
+        CircuitBreaker result = factory.create(config);
 
         assertThat(result).isNotNull();
         assertThat(result.getState()).isInstanceOf(CloseState.class);
@@ -105,11 +105,11 @@ public class DefaultCircuitBreakerFactoryUnitTests {
 
     @Test
     @DisplayName("create: should use initWithoutHalfOpenState when halfOpenState is disabled")
-    public void of_shouldUseInitWithoutHalfOpenStateWhenDisabled() {
+    public void create_shouldUseInitWithoutHalfOpenStateWhenDisabled() {
         CircuitBreakerConfiguration config = configWithoutHalfOpen();
         when(strategiesProvider.getStrategies(config)).thenReturn(strategiesWithoutHalfOpen);
 
-        CircuitBreaker result = factory.of(config);
+        CircuitBreaker result = factory.create(config);
 
         assertThat(result).isNotNull();
         assertThat(result.getState()).isInstanceOf(CloseState.class);

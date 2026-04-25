@@ -16,7 +16,7 @@ public final class DefaultCircuitBreakerFactory implements CircuitBreakerFactory
     }
 
     @Override
-    public CircuitBreaker of(CircuitBreakerConfiguration configuration) {
+    public CircuitBreaker create(CircuitBreakerConfiguration configuration) {
         CircuitBreaker circuitBreaker = createFromConfiguration(configuration);
         registry.register(configuration, circuitBreaker);
         return circuitBreaker;
@@ -28,7 +28,7 @@ public final class DefaultCircuitBreakerFactory implements CircuitBreakerFactory
                 configuration.getIgnorableExceptions()
         );
         Strategies strategies = strategiesProvider.getStrategies(configuration);
-        RequestTimer requestTimer = RequestTimerFactory.of(configuration);
+        RequestTimer requestTimer = RequestTimerFactory.create(configuration);
         if (configuration.getHalfOpenStateConfiguration().isHalfOpenStateEnabled()) {
             CircuitBreakerStateMachineInitializer.initWithHalfOpen(
                     circuitBreaker, strategies, requestTimer, configuration.getHalfOpenStateConfiguration()
