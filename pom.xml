@@ -6,7 +6,7 @@
 
     <groupId>io.github.dmitriy-iliyov</groupId>
     <artifactId>circuit-breaker-parent</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>1.0.0</version>
     <name>circuit-breaker</name>
     <packaging>pom</packaging>
 
