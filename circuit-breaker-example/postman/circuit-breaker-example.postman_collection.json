@@ -1,0 +1,159 @@
+{
+  "info": {
+    "_postman_id": "1f3938ff-23ed-4c94-9539-dabd644e5147",
+    "name": "circuit-breaker-example",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "31061267"
+  },
+  "item": [
+    {
+      "name": "save event",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{PROTOCOL}}://{{HOST}}:8080/api/event",
+          "protocol": "{{PROTOCOL}}",
+          "host": [
+            "{{HOST}}"
+          ],
+          "port": "8080",
+          "path": [
+            "api",
+            "event"
+          ],
+          "query": [
+            {
+              "key": "shouldReturn",
+              "value": "true",
+              "type": "text",
+              "disabled": true
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "produce observable excetion",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{PROTOCOL}}://{{HOST}}:8080/api/observable-exception",
+          "protocol": "{{PROTOCOL}}",
+          "host": [
+            "{{HOST}}"
+          ],
+          "port": "8080",
+          "path": [
+            "api",
+            "observable-exception"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "produce ignorable exception",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{PROTOCOL}}://{{HOST}}:8080/api/ignorable-exception",
+          "protocol": "{{PROTOCOL}}",
+          "host": [
+            "{{HOST}}"
+          ],
+          "port": "8080",
+          "path": [
+            "api",
+            "ignorable-exception"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "get random event from storage",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{PROTOCOL}}://{{HOST}}:8080/api",
+          "protocol": "{{PROTOCOL}}",
+          "host": [
+            "{{HOST}}"
+          ],
+          "port": "8080",
+          "path": [
+            "api"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "slow request",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{PROTOCOL}}://{{HOST}}:8080/api/slow-request",
+          "protocol": "{{PROTOCOL}}",
+          "host": [
+            "{{HOST}}"
+          ],
+          "port": "8080",
+          "path": [
+            "api",
+            "slow-request"
+          ],
+          "query": [
+            {
+              "key": "shouldReturn",
+              "value": "true",
+              "type": "text",
+              "disabled": true
+            }
+          ]
+        }
+      },
+      "response": []
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "PROTOCOL",
+      "value": ""
+    },
+    {
+      "key": "HOST",
+      "value": ""
+    }
+  ]
+}

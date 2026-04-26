@@ -1,0 +1,10 @@
+services:
+
+  circuit-breaker-example:
+    container_name: circuit-breaker-example
+    build:
+      context: ..
+      dockerfile: circuit-breaker-example/Dockerfile
+    image: circuit-breaker-example
+    ports:
+      - "8080:8080"
