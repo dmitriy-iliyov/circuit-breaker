@@ -65,7 +65,6 @@ class OpenStateUnitTests {
         verify(strategy).onRequest();
         verify(strategy).shouldTransition();
         verify(circuitBreaker).trySetState(openState, nextState);
-        verify(strategy).reset();
         verifyNoMoreInteractions(strategy, circuitBreaker);
         verifyNoInteractions(nextState);
     }
@@ -117,7 +116,6 @@ class OpenStateUnitTests {
         verify(strategy).onRequest();
         verify(strategy).shouldTransition();
         verify(circuitBreaker).trySetState(openState, nextState);
-        verify(strategy).reset();
         verifyNoMoreInteractions(strategy, circuitBreaker, process);
         verifyNoInteractions(nextState);
     }

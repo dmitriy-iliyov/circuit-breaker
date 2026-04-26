@@ -23,7 +23,7 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.*;
 
 class DefaultCircuitBreakerUnitTests {
 
@@ -66,6 +66,19 @@ class DefaultCircuitBreakerUnitTests {
     }
 
     @Test
+    @DisplayName("UT: trySetState should return true and reset state when state is open")
+    void trySetState_shouldReturnTrueAndResetState_whenCurrentStateMatchesAndIsOpen() {
+        OpenState mockOpenState = mock(OpenState.class);
+        circuitBreaker.setState(initialState);
+
+        boolean result = circuitBreaker.trySetState(initialState, mockOpenState);
+
+        assertThat(result).isTrue();
+        assertThat(circuitBreaker.getState()).isEqualTo(mockOpenState);
+        verify(mockOpenState, times(1)).reset();
+    }
+
+    @Test
     @DisplayName("UT: trySetState should be thread-safe")
     void trySetState_shouldBeThreadSafe() throws InterruptedException {
         circuitBreaker.setState(initialState);
@@ -100,7 +113,7 @@ class DefaultCircuitBreakerUnitTests {
     }
 
     @Test
-    @DisplayName("setState should initialize state when not initialized")
+    @DisplayName("UT setState should initialize state when not initialized")
     void setState_shouldInitializeState_whenNotInitialized() {
         circuitBreaker.setState(initialState);
 
@@ -108,7 +121,7 @@ class DefaultCircuitBreakerUnitTests {
     }
 
     @Test
-    @DisplayName("setState should throw ConcurrentModificationException when state already initialized")
+    @DisplayName("UT setState should throw ConcurrentModificationException when state already initialized")
     void setState_shouldThrowException_whenStateAlreadyInitialized() {
         circuitBreaker.setState(initialState);
         assertThatThrownBy(() -> circuitBreaker.setState(nextState))
@@ -117,7 +130,7 @@ class DefaultCircuitBreakerUnitTests {
     }
 
     @Test
-    @DisplayName("prepareObservableAndIgnorableExceptions should not remove anything when no intersection and priority is OBSERVABLE")
+    @DisplayName("UT prepareObservableAndIgnorableExceptions should not remove anything when no intersection and priority is OBSERVABLE")
     void prepareExceptions_shouldNotRemoveAnything_whenNoIntersection_andPriorityIsObservable() {
         Set<Class<? extends Throwable>> observable = new HashSet<>();
         observable.add(RuntimeException.class);
@@ -136,7 +149,7 @@ class DefaultCircuitBreakerUnitTests {
 
     @ParameterizedTest
     @EnumSource(ExceptionPriority.class)
-    @DisplayName("getChecker should correctly identify observable exceptions")
+    @DisplayName("UT getChecker should correctly identify observable exceptions")
     void getChecker_shouldIdentifyObservableExceptions(ExceptionPriority priority) {
         DefaultCircuitBreaker cb = new DefaultCircuitBreaker(
                 Set.of(IllegalArgumentException.class),
@@ -153,7 +166,7 @@ class DefaultCircuitBreakerUnitTests {
     }
 
     @Test
-    @DisplayName("getChecker should handle inheritance correctly")
+    @DisplayName("UT getChecker should handle inheritance correctly")
     void getChecker_shouldHandleInheritance() {
         DefaultCircuitBreaker cb = new DefaultCircuitBreaker(
                 Set.of(RuntimeException.class),
@@ -168,7 +181,7 @@ class DefaultCircuitBreakerUnitTests {
     }
 
     @Test
-    @DisplayName("getChecker should respect priority when exceptionSupplier matches both hierarchies")
+    @DisplayName("UT getChecker should respect priority when exceptionSupplier matches both hierarchies")
     void getChecker_shouldRespectPriority_whenMatchesBoth() {
         class BaseEx extends RuntimeException {}
         class ChildEx extends BaseEx {}
@@ -215,7 +228,7 @@ class DefaultCircuitBreakerUnitTests {
 
     @ParameterizedTest
     @MethodSource("checkerTestCases")
-    @DisplayName("checker should return expected result for various scenarios")
+    @DisplayName("UT checker should return expected result for various scenarios")
     void checkerShouldWorkCorrectly(Set<Class<? extends Throwable>> observable,
                                     Set<Class<? extends Throwable>> ignorable,
                                     Throwable exceptionToCheck,

@@ -38,7 +38,6 @@ public class OpenState implements CircuitState {
     private boolean handleTrip() {
         if (strategy.shouldTransition()) {
             if (circuitBreaker.trySetState(this, nextState)) {
-                strategy.reset();
                 return true;
             }
         }
@@ -47,5 +46,9 @@ public class OpenState implements CircuitState {
 
     CircuitState getNextState() {
         return nextState;
+    }
+
+    public void reset() {
+        strategy.reset();
     }
 }

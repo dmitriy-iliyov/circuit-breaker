@@ -69,7 +69,13 @@ public class DefaultCircuitBreaker implements CircuitBreaker, ConfigurableCircui
 
     @Override
     public boolean trySetState(CircuitState previousState, CircuitState nextState) {
-        return state.compareAndSet(previousState, nextState);
+        if (state.compareAndSet(previousState, nextState)) {
+            if (nextState instanceof OpenState openState) {
+                openState.reset();
+            }
+            return true;
+        }
+        return false;
     }
 
     @Override
