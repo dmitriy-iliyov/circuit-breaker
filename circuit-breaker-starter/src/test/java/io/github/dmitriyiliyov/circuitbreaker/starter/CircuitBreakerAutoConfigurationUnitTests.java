@@ -29,7 +29,7 @@ public class CircuitBreakerAutoConfigurationUnitTests {
         StrategiesProvider strategiesProvider = autoConfiguration.strategiesProvider(Collections.emptyList());
         assertThat(strategiesProvider).isInstanceOf(DefaultStrategiesProvider.class);
         DefaultStrategiesProvider defaultProvider = (DefaultStrategiesProvider) strategiesProvider;
-        assertThat(defaultProvider.getProviders()).hasSize(4);
+        assertThat(defaultProvider.getProviders()).hasSize(5);
     }
 
     @Test

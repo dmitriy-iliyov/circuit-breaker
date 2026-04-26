@@ -1,6 +1,7 @@
 package io.github.dmitriyiliyov.circuitbreaker.starter;
 
 
+import io.github.dmitriyiliyov.circuitbreaker.aop.CircuitBreakerAspect;
 import io.github.dmitriyiliyov.circuitbreaker.core.CircuitBreakerFactory;
 import io.github.dmitriyiliyov.circuitbreaker.core.CircuitBreakerRegistry;
 import io.github.dmitriyiliyov.circuitbreaker.core.DefaultCircuitBreakerFactory;
@@ -17,6 +18,7 @@ public class CircuitBreakerAutoConfiguration {
 
     private static final List<StrategyProvider> DEFAULT_PROVIDERS = List.of(
             new SlidingWindowCloseStrategyProvider(),
+            new LockFreeSlidingWindowCloseStrategyProvider(),
             new TimeBasedOpenStrategyProvider(),
             new CountBasedHalfOpenStrategyProvider(),
             new LockFreeCountBasedHalfOpenStrategyProvider()
@@ -42,5 +44,11 @@ public class CircuitBreakerAutoConfiguration {
     public CircuitBreakerFactory circuitBreakerFactory(CircuitBreakerRegistry circuitBreakerRegistry,
                                                        StrategiesProvider strategiesProvider) {
         return new DefaultCircuitBreakerFactory(circuitBreakerRegistry, strategiesProvider);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public CircuitBreakerAspect circuitBreakerAspect(CircuitBreakerRegistry circuitBreakerRegistry) {
+        return new CircuitBreakerAspect(circuitBreakerRegistry);
     }
 }
