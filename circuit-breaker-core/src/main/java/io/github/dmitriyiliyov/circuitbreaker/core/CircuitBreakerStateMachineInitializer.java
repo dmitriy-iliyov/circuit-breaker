@@ -10,7 +10,7 @@ import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.RequestTim
  * This class links the different states ({@link CloseState}, {@link OpenState}, {@link HalfOpenState} or {@link GradualHalfOpenState})
  * together and sets the initial state on the circuit breaker instance.
  */
-public final class CircuitBreakerStateMachineInitializer {
+final class CircuitBreakerStateMachineInitializer {
 
     private CircuitBreakerStateMachineInitializer() {}
 

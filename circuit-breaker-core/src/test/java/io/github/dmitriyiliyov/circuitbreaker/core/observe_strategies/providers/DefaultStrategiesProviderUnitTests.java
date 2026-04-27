@@ -44,7 +44,7 @@ class DefaultStrategiesProviderUnitTests {
         return CircuitBreakerConfiguration.builder()
                 .name("test")
                 .observableExceptions(Set.of(RuntimeException.class))
-                .closeState(b -> b.observeTime(Duration.ofSeconds(1)).exceptionRateThreshold(0.5).initialDelay(Duration.ZERO))
+                .closeState(b -> b.windowSize(100).exceptionRateThreshold(0.5).initialDelay(Duration.ZERO))
                 .halfOpenState(halfOpenState -> halfOpenState
                         .halfOpenStateEnabled(true)
                         .type(HalfOpenType.NORMAL)
@@ -59,7 +59,7 @@ class DefaultStrategiesProviderUnitTests {
         return CircuitBreakerConfiguration.builder()
                 .name("test")
                 .observableExceptions(Set.of(RuntimeException.class))
-                .closeState(b -> b.observeTime(Duration.ofSeconds(1)).exceptionRateThreshold(0.5).initialDelay(Duration.ZERO))
+                .closeState(b -> b.windowSize(100).exceptionRateThreshold(0.5).initialDelay(Duration.ZERO))
                 .waitDurationInOpenState(Duration.ofSeconds(30))
                 .build();
     }

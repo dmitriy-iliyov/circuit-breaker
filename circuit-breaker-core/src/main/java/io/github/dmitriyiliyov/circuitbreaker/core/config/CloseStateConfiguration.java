@@ -1,41 +1,28 @@
 package io.github.dmitriyiliyov.circuitbreaker.core.config;
 
 import java.time.Duration;
+import java.util.Objects;
 
 public final class CloseStateConfiguration {
 
-    private final Duration observeTime;
     private final Integer windowSize;
     private final Double exceptionRateThreshold;
     private final Integer exceptionCountThreshold;
     private final Duration initialDelay;
 
-    private CloseStateConfiguration(Duration observeTime,
-                                    Integer windowSize,
+    private CloseStateConfiguration(Integer windowSize,
                                     Double exceptionRateThreshold,
                                     Integer exceptionCountThreshold,
                                     Duration initialDelay) {
-        if (observeTime == null && windowSize == null) {
-            throw new IllegalArgumentException("either observeTime or windowSize must be provided");
-        }
-        if (observeTime != null && windowSize != null) {
-            throw new IllegalArgumentException("both observeTime and windowSize cannot be provided simultaneously");
-        }
-        this.observeTime = observeTime;
-        this.windowSize = windowSize;
-        if (this.windowSize != null) {
-            this.exceptionRateThreshold = exceptionRateThreshold;
-            this.exceptionCountThreshold = isHasCount(exceptionRateThreshold, exceptionCountThreshold)
-                    ? exceptionCountThreshold
-                    : (int) Math.ceil(windowSize * exceptionRateThreshold);
-        } else {
-            this.exceptionRateThreshold = exceptionRateThreshold;
-            this.exceptionCountThreshold = exceptionCountThreshold;
-        }
+        this.windowSize = Objects.requireNonNull(windowSize, "windowSize cannot be null");
+        this.exceptionRateThreshold = exceptionRateThreshold;
+        this.exceptionCountThreshold = hasCount(exceptionRateThreshold, exceptionCountThreshold)
+                ? exceptionCountThreshold
+                : (int) Math.ceil(windowSize * exceptionRateThreshold);
         this.initialDelay = initialDelay == null ? Duration.ZERO : initialDelay;
     }
 
-    private static boolean isHasCount(Double exceptionRateThreshold, Integer exceptionCountThreshold) {
+    private static boolean hasCount(Double exceptionRateThreshold, Integer exceptionCountThreshold) {
         boolean hasCount = exceptionCountThreshold != null && exceptionCountThreshold > 0;
         boolean hasRate = exceptionRateThreshold != null && exceptionRateThreshold > 0;
         if (hasCount && hasRate) {
@@ -45,10 +32,6 @@ public final class CloseStateConfiguration {
             throw new IllegalArgumentException("either exceptionCountThreshold or exceptionRateThreshold must be non null and >= 0");
         }
         return hasCount;
-    }
-
-    public Duration getObserveTime() {
-        return observeTime;
     }
 
     public Integer getWindowSize() {
@@ -70,8 +53,7 @@ public final class CloseStateConfiguration {
     @Override
     public String toString() {
         return "CloseStateConfiguration{" +
-                "observeTime=" + observeTime +
-                ", windowSize=" + windowSize +
+                "windowSize=" + windowSize +
                 ", exceptionRateThreshold=" + exceptionRateThreshold +
                 ", exceptionCountThreshold=" + exceptionCountThreshold +
                 ", initialDelay=" + initialDelay +
@@ -84,40 +66,33 @@ public final class CloseStateConfiguration {
 
     public static class Builder {
 
-        private Duration observeTime;
         private Integer windowSize;
         private Double exceptionRateThreshold;
         private Integer exceptionCountThreshold;
         private Duration initialDelay;
 
-        public Builder observeTime(Duration observeTime) {
-            this.observeTime = observeTime;
-            return this;
-        }
-
         public Builder windowSize(Integer windowSize) {
-            this.windowSize = windowSize;
+            this.windowSize = Objects.requireNonNull(windowSize, "windowSize cannot be null");
             return this;
         }
 
         public Builder exceptionRateThreshold(Double exceptionRateThreshold) {
-            this.exceptionRateThreshold = exceptionRateThreshold;
+            this.exceptionRateThreshold = Objects.requireNonNull(exceptionRateThreshold, "exceptionRateThreshold cannot be null");
             return this;
         }
 
         public Builder exceptionCountThreshold(Integer exceptionCountThreshold) {
-            this.exceptionCountThreshold = exceptionCountThreshold;
+            this.exceptionCountThreshold = Objects.requireNonNull(exceptionCountThreshold, "exceptionCountThreshold cannot be null");
             return this;
         }
 
         public Builder initialDelay(Duration initialDelay) {
-            this.initialDelay = initialDelay;
+            this.initialDelay = Objects.requireNonNull(initialDelay, "initialDelay cannot be null");
             return this;
         }
 
         public CloseStateConfiguration build() {
             return new CloseStateConfiguration(
-                    observeTime,
                     windowSize,
                     exceptionRateThreshold,
                     exceptionCountThreshold,

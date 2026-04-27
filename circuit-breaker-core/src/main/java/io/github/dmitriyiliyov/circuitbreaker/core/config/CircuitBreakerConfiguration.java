@@ -14,6 +14,7 @@ public final class CircuitBreakerConfiguration {
     private final String name;
     private final Set<Class<? extends Throwable>> observableExceptions;
     private final Set<Class<? extends Throwable>> ignorableExceptions;
+    private final ExceptionPriority exceptionPriority;
     private final Boolean lockFree;
     private final CloseStateConfiguration closeStateConfiguration;
     private final Duration waitDurationInOpenState;
@@ -42,6 +43,8 @@ public final class CircuitBreakerConfiguration {
             this.isRequestTimerEnable = true;
         }
 
+        // configuring set of observable and ignorable exceptions
+        this.exceptionPriority = exceptionPriority;
         checkObservableAndIgnorableExceptions(observableExceptions, ignorableExceptions, exceptionPriority);
         Set<Class<? extends Throwable>> mutableObservable = new HashSet<>(observableExceptions);
         Set<Class<? extends Throwable>> mutableIgnorable = new HashSet<>(
@@ -57,6 +60,7 @@ public final class CircuitBreakerConfiguration {
         this.observableExceptions = Set.copyOf(mutableObservable);
         this.ignorableExceptions = Set.copyOf(mutableIgnorable);
 
+        // configuring states
         this.lockFree = lockFree == null || lockFree;
 
         if (closeStateConfiguration == null) {
@@ -170,6 +174,7 @@ public final class CircuitBreakerConfiguration {
                 "name='" + name + '\'' +
                 ", observableExceptions=" + observableExceptions +
                 ", ignorableExceptions=" + ignorableExceptions +
+                ", exceptionPriority=" + exceptionPriority +
                 ", lockFree=" + lockFree +
                 ", closeStateConfiguration=" + closeStateConfiguration +
                 ", waitDurationInOpenState=" + waitDurationInOpenState +
@@ -180,15 +185,17 @@ public final class CircuitBreakerConfiguration {
     }
 
     public Builder toBuilder() {
-        return new Builder()
-                .name(name)
-                .observableExceptions(observableExceptions)
-                .ignorableExceptions(ignorableExceptions)
-                .lockFree(lockFree)
-                .closeState(closeStateConfiguration)
-                .waitDurationInOpenState(waitDurationInOpenState)
-                .halfOpenState(halfOpenStateConfiguration)
-                .maxRequestExecutionDuration(maxRequestExecutionDuration);
+        return new Builder(
+                name,
+                observableExceptions,
+                ignorableExceptions,
+                exceptionPriority,
+                lockFree,
+                closeStateConfiguration,
+                waitDurationInOpenState,
+                halfOpenStateConfiguration,
+                maxRequestExecutionDuration
+        );
     }
 
     public static Builder builder() {
@@ -207,37 +214,47 @@ public final class CircuitBreakerConfiguration {
         private HalfOpenStateConfiguration halfOpenState;
         private Duration maxRequestExecutionDuration;
 
-        public Builder name(String name) {
+        private Builder() {}
+
+        private Builder(String name, Set<Class<? extends Throwable>> observableExceptions, Set<Class<? extends Throwable>> ignorableExceptions, ExceptionPriority exceptionPriority, Boolean lockFree, CloseStateConfiguration closeState, Duration waitDurationInOpenState, HalfOpenStateConfiguration halfOpenState, Duration maxRequestExecutionDuration) {
             this.name = name;
+            this.observableExceptions = observableExceptions;
+            this.ignorableExceptions = ignorableExceptions;
+            this.exceptionPriority = exceptionPriority;
+            this.lockFree = lockFree;
+            this.closeState = closeState;
+            this.waitDurationInOpenState = waitDurationInOpenState;
+            this.halfOpenState = halfOpenState;
+            this.maxRequestExecutionDuration = maxRequestExecutionDuration;
+        }
+
+        public Builder name(String name) {
+            this.name = Objects.requireNonNull(name, "name cannot be null");
             return this;
         }
 
         public Builder observableExceptions(Set<Class<? extends Throwable>> observableExceptions) {
-            this.observableExceptions = observableExceptions;
+            this.observableExceptions = Objects.requireNonNull(observableExceptions, "observableExceptions cannot be null");
             return this;
         }
 
         public Builder ignorableExceptions(Set<Class<? extends Throwable>> ignorableExceptions) {
-            this.ignorableExceptions = ignorableExceptions;
+            this.ignorableExceptions = Objects.requireNonNull(ignorableExceptions, "ignorableExceptions cannot be null");
             return this;
         }
 
         public Builder exceptionPriority(ExceptionPriority priority) {
-            this.exceptionPriority = priority;
+            this.exceptionPriority = Objects.requireNonNull(priority, "priority cannot be null");
             return this;
         }
 
         public Builder lockFree(Boolean lockFree) {
-            this.lockFree = lockFree;
-            return this;
-        }
-
-        Builder closeState(CloseStateConfiguration closeState) {
-            this.closeState = closeState;
+            this.lockFree = Objects.requireNonNull(lockFree, "lockFree cannot be null");
             return this;
         }
 
         public Builder closeState(Consumer<CloseStateConfiguration.Builder> builderConsumer) {
+            Objects.requireNonNull(builderConsumer, "builderConsumer cannot be null");
             CloseStateConfiguration.Builder builder = CloseStateConfiguration.builder();
             builderConsumer.accept(builder);
             this.closeState = builder.build();
@@ -245,24 +262,20 @@ public final class CircuitBreakerConfiguration {
         }
 
         public Builder waitDurationInOpenState(Duration waitDurationInOpenState) {
-            this.waitDurationInOpenState = waitDurationInOpenState;
+            this.waitDurationInOpenState = Objects.requireNonNull(waitDurationInOpenState, "waitDurationInOpenState cannot be null");
             return this;
         }
 
         public Builder halfOpenState(Consumer<HalfOpenStateConfiguration.Builder> builderConsumer) {
+            Objects.requireNonNull(builderConsumer, "builderConsumer cannot be null");
             HalfOpenStateConfiguration.Builder builder = HalfOpenStateConfiguration.builder();
             builderConsumer.accept(builder);
             this.halfOpenState = builder.build();
             return this;
         }
 
-        Builder halfOpenState(HalfOpenStateConfiguration halfOpenState) {
-            this.halfOpenState = halfOpenState;
-            return this;
-        }
-
         public Builder maxRequestExecutionDuration(Duration maxRequestExecutionDuration) {
-            this.maxRequestExecutionDuration = maxRequestExecutionDuration;
+            this.maxRequestExecutionDuration = Objects.requireNonNull(maxRequestExecutionDuration, "maxRequestExecutionDuration cannot be null");
             return this;
         }
 

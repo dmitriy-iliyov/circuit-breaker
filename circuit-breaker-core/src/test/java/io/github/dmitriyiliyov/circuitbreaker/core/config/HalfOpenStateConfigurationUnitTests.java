@@ -13,7 +13,6 @@ public class HalfOpenStateConfigurationUnitTests {
     @DisplayName("should create disabled configuration when flag is null")
     public void shouldCreateDisabledConfigurationWhenFlagIsNull() {
         HalfOpenStateConfiguration config = HalfOpenStateConfiguration.builder()
-                .halfOpenStateEnabled(null)
                 .build();
 
         assertFalse(config.isHalfOpenStateEnabled());

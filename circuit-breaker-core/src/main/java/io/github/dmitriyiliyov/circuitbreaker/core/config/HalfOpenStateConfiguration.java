@@ -75,6 +75,7 @@ public final class HalfOpenStateConfiguration {
                 ", type=" + type +
                 ", maxRequestInHalfOpenState=" + maxRequestInHalfOpenState +
                 ", maxExceptionCountInHalfOpenState=" + maxExceptionCountInHalfOpenState +
+                ", multiplier=" + multiplier +
                 '}';
     }
 
@@ -92,32 +93,32 @@ public final class HalfOpenStateConfiguration {
         private Double multiplier;
 
         public Builder halfOpenStateEnabled(Boolean isHalfOpenStateEnabled) {
-            this.isHalfOpenStateEnabled = isHalfOpenStateEnabled;
+            this.isHalfOpenStateEnabled = Objects.requireNonNull(isHalfOpenStateEnabled, "isHalfOpenStateEnabled cannot be null");
             return this;
         }
 
         public Builder type(HalfOpenType type) {
-            this.type = type;
+            this.type = Objects.requireNonNull(type, "type cannot be null");;
             return this;
         }
 
         public Builder maxRequestInHalfOpenState(Integer maxRequestInHalfOpenState) {
-            this.maxRequestInHalfOpenState = maxRequestInHalfOpenState;
+            this.maxRequestInHalfOpenState = Objects.requireNonNull(maxRequestInHalfOpenState, "maxRequestInHalfOpenState cannot be null");;
             return this;
         }
 
         public Builder maxExceptionCountInHalfOpenState(Integer maxExceptionCountInHalfOpenState) {
-            this.maxExceptionCountInHalfOpenState = maxExceptionCountInHalfOpenState;
+            this.maxExceptionCountInHalfOpenState = Objects.requireNonNull(maxExceptionCountInHalfOpenState, "maxExceptionCountInHalfOpenState cannot be null");;
             return this;
         }
 
         public Builder maxExceptionRateInHalfOpenState(Double maxExceptionRateInHalfOpenState) {
-            this.maxExceptionRateInHalfOpenState = maxExceptionRateInHalfOpenState;
+            this.maxExceptionRateInHalfOpenState = Objects.requireNonNull(maxExceptionRateInHalfOpenState, "maxExceptionRateInHalfOpenState cannot be null");;
             return this;
         }
 
         public Builder multiplier(Double multiplier) {
-            this.multiplier = multiplier;
+            this.multiplier = Objects.requireNonNull(multiplier, "multiplier cannot be null");;
             return this;
         }
 

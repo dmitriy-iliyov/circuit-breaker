@@ -12,11 +12,12 @@ import java.util.Set;
 import java.util.function.Consumer;
 
 import static org.assertj.core.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class CircuitBreakerConfigurationUnitTests {
 
     private final Consumer<CloseStateConfiguration.Builder> validCloseStateConsumer = builder -> builder
-            .observeTime(Duration.ofSeconds(1))
+            .windowSize(100)
             .exceptionRateThreshold(0.5)
             .initialDelay(Duration.ZERO);
 
@@ -59,7 +60,6 @@ public class CircuitBreakerConfigurationUnitTests {
     public void shouldThrowExceptionWhenIgnorableExceptionsIsNullAndPriorityIsIgnorable() {
         assertThatThrownBy(() -> baseBuilder()
                 .observableExceptions(Set.of(RuntimeException.class))
-                .ignorableExceptions(null)
                 .exceptionPriority(ExceptionPriority.IGNORABLE)
                 .build())
                 .isInstanceOf(IllegalArgumentException.class)
@@ -83,7 +83,6 @@ public class CircuitBreakerConfigurationUnitTests {
     public void shouldAllowNullIgnorableExceptionsWhenPriorityIsObservable() {
         CircuitBreakerConfiguration config = baseBuilder()
                 .observableExceptions(Set.of(RuntimeException.class))
-                .ignorableExceptions(null)
                 .build();
 
         assertThat(config.getIgnorableExceptions()).isEmpty();
@@ -106,10 +105,20 @@ public class CircuitBreakerConfigurationUnitTests {
     public void shouldAllowNullIgnorableExceptionsWhenPriorityIsNull() {
         CircuitBreakerConfiguration config = baseBuilder()
                 .observableExceptions(Set.of(RuntimeException.class))
-                .ignorableExceptions(null)
                 .build();
 
         assertThat(config.getIgnorableExceptions()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("UT: should throw when ignorableExceptions is null")
+    void ignorableExceptions_shouldThrows_whenNullPassed() {
+        assertThrows(NullPointerException.class, () ->
+                baseBuilder()
+                        .observableExceptions(Set.of(RuntimeException.class))
+                        .ignorableExceptions(null)
+                        .build()
+        );
     }
 
     @Test
@@ -189,10 +198,20 @@ public class CircuitBreakerConfigurationUnitTests {
     public void shouldDefaultLockFreeToTrueWhenNull() {
         CircuitBreakerConfiguration config = baseBuilder()
                 .observableExceptions(Set.of(RuntimeException.class))
-                .lockFree(null)
                 .build();
 
         assertThat(config.getLockFree()).isTrue();
+    }
+
+    @Test
+    @DisplayName("UT: should throw when lockFree is null")
+    void lockFree_shouldThrows_whenNullPassed() {
+        assertThrows(NullPointerException.class, () ->
+                baseBuilder()
+                        .observableExceptions(Set.of(RuntimeException.class))
+                        .lockFree(null)
+                        .build()
+        );
     }
 
     @Test
@@ -295,10 +314,22 @@ public class CircuitBreakerConfigurationUnitTests {
                 .observableExceptions(Set.of(RuntimeException.class))
                 .ignorableExceptions(Set.of(IllegalStateException.class))
                 .exceptionPriority(ExceptionPriority.IGNORABLE)
-                .maxRequestExecutionDuration(null)
                 .build();
 
         assertThat(config.isRequestTimerEnable()).isFalse();
+    }
+
+    @Test
+    @DisplayName("UT: should throw when maxRequestExecutionDuration is null")
+    void maxRequestExecutionDuration_shouldThrows_whenNullPassed() {
+        assertThrows(NullPointerException.class, () ->
+                baseBuilder()
+                        .observableExceptions(Set.of(RuntimeException.class))
+                        .ignorableExceptions(Set.of(IllegalStateException.class))
+                        .exceptionPriority(ExceptionPriority.IGNORABLE)
+                        .maxRequestExecutionDuration(null)
+                        .build()
+        );
     }
 
     @Test
@@ -320,7 +351,6 @@ public class CircuitBreakerConfigurationUnitTests {
                 .observableExceptions(Set.of(IllegalArgumentException.class))
                 .ignorableExceptions(Set.of(IllegalStateException.class))
                 .exceptionPriority(ExceptionPriority.IGNORABLE)
-                .maxRequestExecutionDuration(null)
                 .build();
 
         assertThat(config.getObservableExceptions()).doesNotContain(SlowRequestException.class);

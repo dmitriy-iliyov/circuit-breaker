@@ -49,7 +49,12 @@ public final class DefaultStrategiesProvider implements StrategiesProvider {
                 return provider;
             }
         }
-        throw new IllegalStateException("strategy provider not found for '%s' state".formatted(stateType.name()));
+        throw new IllegalStateException(
+                "%s strategy provider not found for '%s' state".formatted(
+                        configuration.getLockFree() ? "lock-free" : "sync",
+                        stateType.name()
+                )
+        );
     }
 
     public List<StrategyProvider> getProviders() {

@@ -5,7 +5,7 @@ package io.github.dmitriyiliyov.circuitbreaker.core;
  * This is primarily used during the initialization of the circuit breaker to link the half-open state
  * with the other states.
  */
-public interface ConfigurableHalfOpenState {
+interface ConfigurableHalfOpenState {
 
     /**
      * Initializes the close state reference.

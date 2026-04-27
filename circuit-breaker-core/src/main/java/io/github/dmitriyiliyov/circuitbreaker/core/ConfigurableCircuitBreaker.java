@@ -6,7 +6,7 @@ package io.github.dmitriyiliyov.circuitbreaker.core;
  * This interface provides methods to set the internal state of the circuit breaker,
  * which is primarily used during initialization or testing.
  */
-public interface ConfigurableCircuitBreaker {
+interface ConfigurableCircuitBreaker {
 
     /**
      * Initializes the circuit breaker state.

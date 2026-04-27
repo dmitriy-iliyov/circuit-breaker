@@ -137,4 +137,3 @@ public class GradualHalfOpenState implements CircuitState, ConfigurableHalfOpenS
         }
     }
 }
-
