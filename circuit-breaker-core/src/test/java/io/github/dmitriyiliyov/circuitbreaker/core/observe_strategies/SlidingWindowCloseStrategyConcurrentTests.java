@@ -44,8 +44,8 @@ public class SlidingWindowCloseStrategyConcurrentTests {
 
     static Stream<Function<TestParams, CloseStateStrategy>> strategySuppliers() {
         return Stream.of(
-                p -> new SlidingWindowCloseStrategy(p.windowSize(), p.threshold(), Duration.ZERO)
-                // p -> new LockFreeSlidingWindowCloseStrategy(p.windowSize(), p.threshold(), Duration.ZERO)
+                p -> new SlidingWindowCloseStrategy(p.windowSize(), p.threshold(), Duration.ZERO),
+                p -> new LockFreeSlidingWindowCloseStrategy(p.windowSize(), p.threshold(), Duration.ZERO)
         );
     }
 

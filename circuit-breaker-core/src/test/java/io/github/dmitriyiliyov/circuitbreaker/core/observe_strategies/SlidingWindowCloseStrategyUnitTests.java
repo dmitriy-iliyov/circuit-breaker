@@ -2,10 +2,12 @@ package io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.time.Duration;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -72,13 +74,26 @@ public class SlidingWindowCloseStrategyUnitTests {
         );
     }
 
-    @ParameterizedTest
-    @MethodSource("testParams")
-    @DisplayName("UT №1: all requests without exceptions should result in shouldTrip being false")
-    public void allRequestWithoutExceptions_shouldTripShouldBeFalse(TestParams params) {
-        SlidingWindowCloseStrategy strategy = new SlidingWindowCloseStrategy(
-                params.windowSize(), params.threshold(), params.initialDelay()
+    static Stream<Function<TestParams, CloseStateStrategy>> strategySuppliers() {
+        return Stream.of(
+                testParams -> new SlidingWindowCloseStrategy(testParams.windowSize(), testParams.threshold(), testParams.initialDelay()),
+                testParams -> new LockFreeSlidingWindowCloseStrategy(testParams.windowSize(), testParams.threshold(), testParams.initialDelay())
         );
+    }
+
+    static Stream<Arguments> arguments() {
+        return testParams().flatMap(params -> strategySuppliers()
+                .map(supplier -> Arguments.of(params, supplier))
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("arguments")
+    @DisplayName("UT №1: all requests without exceptions should result in shouldTrip being false")
+    public void allRequestWithoutExceptions_shouldTripShouldBeFalse(
+            TestParams params, Function<TestParams, CloseStateStrategy> strategySupplier
+    ) {
+        CloseStateStrategy strategy = strategySupplier.apply(params);
         for (int i = 0; i < params.windowSize; i++) {
             strategy.onSuccess();
         }
@@ -86,12 +101,12 @@ public class SlidingWindowCloseStrategyUnitTests {
     }
 
     @ParameterizedTest
-    @MethodSource("testParams")
+    @MethodSource("arguments")
     @DisplayName("UT №2: exceptionSupplier frequency threshold not reached should result in shouldTrip being false")
-    public void exceptionFrequencyThresholdNotReached_shouldTripShouldBeFalse(TestParams params) throws InterruptedException {
-        SlidingWindowCloseStrategy strategy = new SlidingWindowCloseStrategy(
-                params.windowSize(), params.threshold(), params.initialDelay()
-        );
+    public void exceptionFrequencyThresholdNotReached_shouldTripShouldBeFalse(
+            TestParams params, Function<TestParams, CloseStateStrategy> strategySupplier
+    ) {
+        CloseStateStrategy strategy = strategySupplier.apply(params);
 
         for (int i = 0; i < params.successRequestCount(); i++) {
             strategy.onSuccess();
@@ -103,12 +118,12 @@ public class SlidingWindowCloseStrategyUnitTests {
     }
 
     @ParameterizedTest
-    @MethodSource("testParams")
+    @MethodSource("arguments")
     @DisplayName("UT №3: exceptionSupplier frequency threshold reached should result in shouldTrip being true")
-    public void exceptionFrequencyThresholdReached_shouldTripShouldBeTrue(TestParams params) {
-        SlidingWindowCloseStrategy strategy = new SlidingWindowCloseStrategy(
-                params.windowSize(), params.threshold(), params.initialDelay()
-        );
+    public void exceptionFrequencyThresholdReached_shouldTripShouldBeTrue(
+            TestParams params, Function<TestParams, CloseStateStrategy> strategySupplier
+    ) {
+        CloseStateStrategy strategy = strategySupplier.apply(params);
         for (int i = 0; i < params.successRequestCount(); i++) {
             strategy.onSuccess();
         }
@@ -119,12 +134,12 @@ public class SlidingWindowCloseStrategyUnitTests {
     }
 
     @ParameterizedTest
-    @MethodSource("testParams")
+    @MethodSource("arguments")
     @DisplayName("UT №4: one successSupplier round followed by another successSupplier round should result in shouldTrip being false")
-    public void oneSuccessRound_shouldTripShouldBeFalse(TestParams params) {
-        SlidingWindowCloseStrategy strategy = new SlidingWindowCloseStrategy(
-                params.windowSize(), params.threshold(), params.initialDelay()
-        );
+    public void oneSuccessRound_shouldTripShouldBeFalse(
+            TestParams params, Function<TestParams, CloseStateStrategy> strategySupplier
+    ) {
+        CloseStateStrategy strategy = strategySupplier.apply(params);
         for (int i = 0; i < params.windowSize(); i++) {
             strategy.onSuccess();
         }
@@ -137,12 +152,12 @@ public class SlidingWindowCloseStrategyUnitTests {
     }
 
     @ParameterizedTest
-    @MethodSource("testParams")
+    @MethodSource("arguments")
     @DisplayName("UT №5: reset should clear state and shouldTrip should be false")
-    public void reset_shouldClearStateAndShouldTripShouldBeFalse(TestParams params) {
-        SlidingWindowCloseStrategy strategy = new SlidingWindowCloseStrategy(
-                params.windowSize(), params.threshold(), params.initialDelay()
-        );
+    public void reset_shouldClearStateAndShouldTripShouldBeFalse(
+            TestParams params, Function<TestParams, CloseStateStrategy> strategySupplier
+    ) {
+        CloseStateStrategy strategy = strategySupplier.apply(params);
         for (int i = 0; i < params.successRequestCount(); i++) {
             strategy.onSuccess();
         }
