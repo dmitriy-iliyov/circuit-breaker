@@ -74,9 +74,7 @@ public final class CircuitBreakerConfiguration {
         this.waitDurationInOpenState = waitDurationInOpenState;
 
         if (halfOpenStateConfiguration == null) {
-            this.halfOpenStateConfiguration = HalfOpenStateConfiguration.builder()
-                    .halfOpenStateEnabled(false)
-                    .build();
+            this.halfOpenStateConfiguration = HalfOpenStateConfiguration.builder().build();
         } else {
             this.halfOpenStateConfiguration = halfOpenStateConfiguration;
         }

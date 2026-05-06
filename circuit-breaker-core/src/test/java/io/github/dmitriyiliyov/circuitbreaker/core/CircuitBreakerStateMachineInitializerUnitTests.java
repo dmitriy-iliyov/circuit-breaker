@@ -30,14 +30,12 @@ public class CircuitBreakerStateMachineInitializerUnitTests {
     );
 
     private final HalfOpenStateConfiguration normalHalfOpenStateConfiguration = HalfOpenStateConfiguration.builder()
-            .halfOpenStateEnabled(true)
             .type(HalfOpenType.NORMAL)
             .maxRequestInHalfOpenState(20)
             .maxExceptionCountInHalfOpenState(2)
             .build();
 
     private final HalfOpenStateConfiguration gradualHalfOpenStateConfiguration = HalfOpenStateConfiguration.builder()
-            .halfOpenStateEnabled(true)
             .type(HalfOpenType.GRADUAL)
             .maxRequestInHalfOpenState(20)
             .maxExceptionCountInHalfOpenState(2)

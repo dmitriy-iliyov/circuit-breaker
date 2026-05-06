@@ -11,41 +11,51 @@ public final class HalfOpenStateConfiguration {
     private final int maxExceptionCountInHalfOpenState;
     private final double multiplier;
 
-    private HalfOpenStateConfiguration(Boolean isHalfOpenStateEnabled,
-                                       HalfOpenType type,
+    private HalfOpenStateConfiguration(HalfOpenType type,
                                        Integer maxRequestInHalfOpenState,
                                        Integer maxExceptionCountInHalfOpenState,
                                        Double maxExceptionRateInHalfOpenState,
                                        Double multiplier) {
-        this.isHalfOpenStateEnabled = isHalfOpenStateEnabled != null && isHalfOpenStateEnabled;
-        if (this.isHalfOpenStateEnabled && (maxRequestInHalfOpenState == null || maxRequestInHalfOpenState == 0)) {
-            throw new IllegalArgumentException("maxRequestInHalfOpenState cannot be null or == 0 when isHalfOpenStateEnabled == true");
-        } else if (!this.isHalfOpenStateEnabled) {
+        if(isDisabled(type, maxRequestInHalfOpenState, maxExceptionCountInHalfOpenState, maxExceptionRateInHalfOpenState)) {
+            this.isHalfOpenStateEnabled = false;
             this.type = null;
             this.maxRequestInHalfOpenState = 0;
             this.maxExceptionCountInHalfOpenState = 0;
             this.multiplier = 0.0;
         } else {
-            this.type = Objects.requireNonNull(type, "halfOpenType cannot be null");
-            if (HalfOpenType.GRADUAL.equals(type)) {
-                this.multiplier = multiplier == null || multiplier < 0 ? DEFAULT_GRANULAR_MULTIPLIER : multiplier;
-            } else {
-                this.multiplier = 0.0;
-            }
-            if (maxRequestInHalfOpenState < 0) {
-                throw new IllegalArgumentException("maxRequestInHalfOpenState cannot be < 0");
-            }
-            this.maxRequestInHalfOpenState = maxRequestInHalfOpenState;
+            this.isHalfOpenStateEnabled = true;
+            this.type = type == null ? HalfOpenType.NORMAL : type;
 
-            boolean hasCount = maxExceptionCountInHalfOpenState != null && maxExceptionCountInHalfOpenState > 0;
-            boolean hasRate = maxExceptionRateInHalfOpenState != null && maxExceptionRateInHalfOpenState > 0;
+            this.maxRequestInHalfOpenState = Objects.requireNonNull(maxRequestInHalfOpenState, "maxRequestInHalfOpenState cannot be null");;
+
+            boolean hasCount = maxExceptionCountInHalfOpenState != null;
+            boolean hasRate = maxExceptionRateInHalfOpenState != null;
+            if (hasCount && hasRate) {
+                throw new IllegalArgumentException("is not possible to supply both maxExceptionCountInHalfOpenState and maxExceptionRateInHalfOpenState parameters");
+            }
             if (!hasCount && !hasRate) {
                 throw new IllegalArgumentException("either maxExceptionCountInHalfOpenState or maxExceptionRateInHalfOpenState must be non null and > 0");
             }
             this.maxExceptionCountInHalfOpenState = hasCount
                     ? maxExceptionCountInHalfOpenState
                     : (int) Math.ceil(maxRequestInHalfOpenState * maxExceptionRateInHalfOpenState);
+
+            if (HalfOpenType.GRADUAL.equals(this.type)) {
+                this.multiplier = multiplier == null ? DEFAULT_GRANULAR_MULTIPLIER : multiplier;
+            } else {
+                this.multiplier = 0.0;
+            }
         }
+    }
+
+    private boolean isDisabled(HalfOpenType type,
+                               Integer maxRequestInHalfOpenState,
+                               Integer maxExceptionCountInHalfOpenState,
+                               Double maxExceptionRateInHalfOpenState) {
+        return type == null &&
+                maxRequestInHalfOpenState == null &&
+                maxExceptionCountInHalfOpenState == null &&
+                maxExceptionRateInHalfOpenState == null;
     }
 
     public boolean isHalfOpenStateEnabled() {
@@ -85,46 +95,55 @@ public final class HalfOpenStateConfiguration {
 
     public static class Builder {
 
-        private Boolean isHalfOpenStateEnabled;
         private HalfOpenType type;
         private Integer maxRequestInHalfOpenState;
         private Integer maxExceptionCountInHalfOpenState;
         private Double maxExceptionRateInHalfOpenState;
         private Double multiplier;
 
-        public Builder halfOpenStateEnabled(Boolean isHalfOpenStateEnabled) {
-            this.isHalfOpenStateEnabled = Objects.requireNonNull(isHalfOpenStateEnabled, "isHalfOpenStateEnabled cannot be null");
-            return this;
-        }
-
         public Builder type(HalfOpenType type) {
-            this.type = Objects.requireNonNull(type, "type cannot be null");;
+            this.type = Objects.requireNonNull(type, "type cannot be null");
             return this;
         }
 
         public Builder maxRequestInHalfOpenState(Integer maxRequestInHalfOpenState) {
-            this.maxRequestInHalfOpenState = Objects.requireNonNull(maxRequestInHalfOpenState, "maxRequestInHalfOpenState cannot be null");;
+            Objects.requireNonNull(maxRequestInHalfOpenState, "maxRequestInHalfOpenState cannot be null");
+            if (maxRequestInHalfOpenState <= 0) {
+                throw new IllegalArgumentException("maxRequestInHalfOpenState must be > 0 when half-open is enabled");
+            }
+            this.maxRequestInHalfOpenState = maxRequestInHalfOpenState;
             return this;
         }
 
         public Builder maxExceptionCountInHalfOpenState(Integer maxExceptionCountInHalfOpenState) {
-            this.maxExceptionCountInHalfOpenState = Objects.requireNonNull(maxExceptionCountInHalfOpenState, "maxExceptionCountInHalfOpenState cannot be null");;
+            Objects.requireNonNull(maxExceptionCountInHalfOpenState, "maxExceptionCountInHalfOpenState cannot be null");
+            if (maxExceptionCountInHalfOpenState < 0) {
+                throw new IllegalArgumentException("maxExceptionCountInHalfOpenState cannot be < 0");
+            }
+            this.maxExceptionCountInHalfOpenState = maxExceptionCountInHalfOpenState;
             return this;
         }
 
         public Builder maxExceptionRateInHalfOpenState(Double maxExceptionRateInHalfOpenState) {
-            this.maxExceptionRateInHalfOpenState = Objects.requireNonNull(maxExceptionRateInHalfOpenState, "maxExceptionRateInHalfOpenState cannot be null");;
+            Objects.requireNonNull(maxExceptionRateInHalfOpenState, "maxExceptionRateInHalfOpenState cannot be null");
+            if (maxExceptionRateInHalfOpenState < 0) {
+                throw new IllegalArgumentException("maxExceptionRateInHalfOpenState cannot be < 0");
+            }
+            this.maxExceptionRateInHalfOpenState = maxExceptionRateInHalfOpenState;
             return this;
         }
 
         public Builder multiplier(Double multiplier) {
-            this.multiplier = Objects.requireNonNull(multiplier, "multiplier cannot be null");;
+            Objects.requireNonNull(multiplier, "multiplier cannot be null");
+            if (multiplier <= 0) {
+                throw new IllegalArgumentException("multiplier cannot be <= 0");
+            }
+            this.multiplier = multiplier;
             return this;
         }
 
         public HalfOpenStateConfiguration build() {
             return new HalfOpenStateConfiguration(
-                    isHalfOpenStateEnabled,
                     type,
                     maxRequestInHalfOpenState,
                     maxExceptionCountInHalfOpenState,

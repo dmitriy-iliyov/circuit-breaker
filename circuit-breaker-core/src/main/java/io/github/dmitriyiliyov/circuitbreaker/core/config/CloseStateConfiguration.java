@@ -6,7 +6,6 @@ import java.util.Objects;
 public final class CloseStateConfiguration {
 
     private final Integer windowSize;
-    private final Double exceptionRateThreshold;
     private final Integer exceptionCountThreshold;
     private final Duration initialDelay;
 
@@ -15,7 +14,6 @@ public final class CloseStateConfiguration {
                                     Integer exceptionCountThreshold,
                                     Duration initialDelay) {
         this.windowSize = Objects.requireNonNull(windowSize, "windowSize cannot be null");
-        this.exceptionRateThreshold = exceptionRateThreshold;
         this.exceptionCountThreshold = hasCount(exceptionRateThreshold, exceptionCountThreshold)
                 ? exceptionCountThreshold
                 : (int) Math.ceil(windowSize * exceptionRateThreshold);
@@ -23,8 +21,8 @@ public final class CloseStateConfiguration {
     }
 
     private static boolean hasCount(Double exceptionRateThreshold, Integer exceptionCountThreshold) {
-        boolean hasCount = exceptionCountThreshold != null && exceptionCountThreshold > 0;
-        boolean hasRate = exceptionRateThreshold != null && exceptionRateThreshold > 0;
+        boolean hasCount = exceptionCountThreshold != null;
+        boolean hasRate = exceptionRateThreshold != null;
         if (hasCount && hasRate) {
             throw new IllegalArgumentException("both exceptionRateThreshold and exceptionCountThreshold cannot be provided simultaneously");
         }
@@ -36,10 +34,6 @@ public final class CloseStateConfiguration {
 
     public Integer getWindowSize() {
         return windowSize;
-    }
-
-    public Double getExceptionRateThreshold() {
-        return exceptionRateThreshold;
     }
 
     public Integer getExceptionCountThreshold() {
@@ -54,7 +48,6 @@ public final class CloseStateConfiguration {
     public String toString() {
         return "CloseStateConfiguration{" +
                 "windowSize=" + windowSize +
-                ", exceptionRateThreshold=" + exceptionRateThreshold +
                 ", exceptionCountThreshold=" + exceptionCountThreshold +
                 ", initialDelay=" + initialDelay +
                 '}';
@@ -72,17 +65,29 @@ public final class CloseStateConfiguration {
         private Duration initialDelay;
 
         public Builder windowSize(Integer windowSize) {
-            this.windowSize = Objects.requireNonNull(windowSize, "windowSize cannot be null");
+            Objects.requireNonNull(windowSize, "windowSize cannot be null");
+            if (windowSize <= 0) {
+                throw new IllegalArgumentException("windowSize cannot be <= 0");
+            }
+            this.windowSize = windowSize;
             return this;
         }
 
         public Builder exceptionRateThreshold(Double exceptionRateThreshold) {
-            this.exceptionRateThreshold = Objects.requireNonNull(exceptionRateThreshold, "exceptionRateThreshold cannot be null");
+            Objects.requireNonNull(exceptionRateThreshold, "exceptionRateThreshold cannot be null");
+            if (exceptionRateThreshold < 0) {
+                throw new IllegalArgumentException("exceptionRateThreshold cannot be < 0");
+            }
+            this.exceptionRateThreshold = exceptionRateThreshold;
             return this;
         }
 
         public Builder exceptionCountThreshold(Integer exceptionCountThreshold) {
-            this.exceptionCountThreshold = Objects.requireNonNull(exceptionCountThreshold, "exceptionCountThreshold cannot be null");
+            Objects.requireNonNull(exceptionCountThreshold, "exceptionCountThreshold cannot be null");
+            if (exceptionCountThreshold < 0) {
+                throw new IllegalArgumentException("exceptionCountThreshold cannot be < 0");
+            }
+            this.exceptionCountThreshold = exceptionCountThreshold;
             return this;
         }
 

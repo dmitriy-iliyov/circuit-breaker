@@ -40,7 +40,6 @@ public class DefaultCircuitBreakerFactoryUnitTests {
                 .observableExceptions(Set.of(RuntimeException.class))
                 .closeState(b -> b.windowSize(100).exceptionRateThreshold(0.5).initialDelay(Duration.ZERO))
                 .halfOpenState(halfOpenState -> halfOpenState
-                        .halfOpenStateEnabled(true)
                         .type(HalfOpenType.NORMAL)
                         .maxRequestInHalfOpenState(10)
                         .maxExceptionCountInHalfOpenState(5)

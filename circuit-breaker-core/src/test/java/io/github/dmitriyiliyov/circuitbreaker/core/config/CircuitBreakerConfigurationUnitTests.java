@@ -22,7 +22,6 @@ public class CircuitBreakerConfigurationUnitTests {
             .initialDelay(Duration.ZERO);
 
     private final Consumer<HalfOpenStateConfiguration.Builder> validHalfOpenStateConsumer = builder -> builder
-            .halfOpenStateEnabled(true)
             .type(HalfOpenType.NORMAL)
             .maxRequestInHalfOpenState(20)
             .maxExceptionCountInHalfOpenState(2);
@@ -36,7 +35,7 @@ public class CircuitBreakerConfigurationUnitTests {
     }
 
     @Test
-    @DisplayName("should throw exceptionSupplier when observableExceptions is null")
+    @DisplayName("UT should throw exceptionSupplier when observableExceptions is null")
     public void shouldThrowExceptionWhenObservableExceptionsIsNull() {
         assertThatThrownBy(() -> baseBuilder()
                 .observableExceptions(null)

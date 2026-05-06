@@ -30,7 +30,6 @@ public class CircuitBreakerConfig {
                 )
                 .waitDurationInOpenState(Duration.ofMinutes(2))
                 .halfOpenState(halfOpenState -> halfOpenState
-                        .halfOpenStateEnabled(true)
                         .type(HalfOpenType.NORMAL)
                         .maxRequestInHalfOpenState(20)
                         .maxExceptionCountInHalfOpenState(2)
