@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
 @Warmup(iterations = 3, time = 1)
 @Measurement(iterations = 5, time = 2)
 @Fork(2)
-@Threads(Threads.MAX)
+@Threads(8)
 public class SyncVsFailsafeBenchmark {
 
     private static final CircuitBreakerFactory FACTORY = new DefaultCircuitBreakerFactory(
@@ -62,12 +62,24 @@ public class SyncVsFailsafeBenchmark {
 
     @Benchmark
     public void testClosed_myLibSync(ClosedState state, Blackhole bh) {
-        bh.consume(executeMy(state.myLibSync, () -> "ok"));
+        bh.consume(executeMy(state.myLibSync, () -> {
+            int sum = 0;
+            for (int i = 0; i < 100; i++) {
+                sum += i;
+            }
+            return "ok" + sum;
+        }));
     }
 
     @Benchmark
     public void testClosed_failsafe(ClosedState state, Blackhole bh) {
-        bh.consume(executeFailsafe(state.failsafeCb, () -> "ok"));
+        bh.consume(executeFailsafe(state.failsafeCb, () -> {
+            int sum = 0;
+            for (int i = 0; i < 100; i++) {
+                sum += i;
+            }
+            return "ok" + sum;
+        }));
     }
 
     @State(Scope.Benchmark)

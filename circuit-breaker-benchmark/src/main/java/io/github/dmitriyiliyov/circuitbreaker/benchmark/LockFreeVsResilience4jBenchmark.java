@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
 @Warmup(iterations = 3, time = 1)
 @Measurement(iterations = 5, time = 2)
 @Fork(2)
-@Threads(Threads.MAX)
+@Threads(8)
 public class LockFreeVsResilience4jBenchmark {
 
     private static final CircuitBreakerFactory FACTORY = new DefaultCircuitBreakerFactory(
@@ -60,12 +60,24 @@ public class LockFreeVsResilience4jBenchmark {
 
     @Benchmark
     public void testClosed_myLib(ClosedState state, Blackhole bh) {
-        bh.consume(executeMy(state.myLib, () -> "ok"));
+        bh.consume(executeMy(state.myLib, () -> {
+            int sum = 0;
+            for (int i = 0; i < 100; i++) {
+                sum += i;
+            }
+            return "ok" + sum;
+        }));
     }
 
     @Benchmark
     public void testClosed_rs4j(ClosedState state, Blackhole bh) {
-        bh.consume(executeRs4j(state.rs4j, () -> "ok"));
+        bh.consume(executeRs4j(state.rs4j, () -> {
+            int sum = 0;
+            for (int i = 0; i < 100; i++) {
+                sum += i;
+            }
+            return "ok" + sum;
+        }));
     }
 
     @State(Scope.Benchmark)
