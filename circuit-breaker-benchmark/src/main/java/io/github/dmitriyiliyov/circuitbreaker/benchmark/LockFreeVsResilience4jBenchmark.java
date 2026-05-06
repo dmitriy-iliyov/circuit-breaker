@@ -25,7 +25,7 @@ import java.util.concurrent.TimeUnit;
 @Measurement(iterations = 5, time = 2)
 @Fork(2)
 @Threads(Threads.MAX)
-public class LockFreeVsResilence4jBenchmark {
+public class LockFreeVsResilience4jBenchmark {
 
     private static final CircuitBreakerFactory FACTORY = new DefaultCircuitBreakerFactory(
             new DefaultCircuitBreakerRegistry(),
@@ -177,7 +177,7 @@ public class LockFreeVsResilence4jBenchmark {
 
     public static void main(String[] args) throws RunnerException {
         Options opt = new OptionsBuilder()
-                .include(LockFreeVsResilence4jBenchmark.class.getSimpleName())
+                .include(LockFreeVsResilience4jBenchmark.class.getSimpleName())
                 .build();
         new Runner(opt).run();
     }
