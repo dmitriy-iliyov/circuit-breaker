@@ -8,6 +8,7 @@
     <artifactId>circuit-breaker-parent</artifactId>
     <version>1.0.0</version>
     <name>circuit-breaker</name>
+    <description>A lightweight Java Circuit Breaker implementation</description>
     <packaging>pom</packaging>
 
     <url>https://github.com/dmitriy-iliyov/circuit-breaker</url>

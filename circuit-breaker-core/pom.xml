@@ -10,8 +10,8 @@
     </parent>
 
     <artifactId>circuit-breaker-core</artifactId>
-    <packaging>jar</packaging>
     <name>circuit-breaker-core</name>
+    <packaging>jar</packaging>
 
     <dependencies>
         <!-- tests -->

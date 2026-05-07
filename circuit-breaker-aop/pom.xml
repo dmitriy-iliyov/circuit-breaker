@@ -10,6 +10,7 @@
     </parent>
 
     <artifactId>circuit-breaker-aop</artifactId>
+    <name>circuit-breaker-aop</name>
     <packaging>jar</packaging>
 
     <dependencies>
