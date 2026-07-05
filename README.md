@@ -84,105 +84,105 @@ Environment: Java 21, Core i9
 
 Sync version vs Failsafe:
 
-    Benchmark                                                                      Mode  Cnt  Score   Error   Units
-    SyncVsFailsafeBenchmark.failsafe_halfOpenContention                           thrpt   10  3.775 ± 0.403  ops/us
-    SyncVsFailsafeBenchmark.failsafe_halfOpenContention:breakerOpener_failsafe    thrpt   10  0.470 ± 0.059  ops/us
-    SyncVsFailsafeBenchmark.failsafe_halfOpenContention:breakerProber_failsafe    thrpt   10  3.305 ± 0.345  ops/us
-    SyncVsFailsafeBenchmark.myLibSync_halfOpenContention                          thrpt   10  4.578 ± 0.190  ops/us
-    SyncVsFailsafeBenchmark.myLibSync_halfOpenContention:breakerOpener_myLibSync  thrpt   10  0.597 ± 0.022  ops/us
-    SyncVsFailsafeBenchmark.myLibSync_halfOpenContention:breakerProber_myLibSync  thrpt   10  3.981 ± 0.171  ops/us
-    SyncVsFailsafeBenchmark.testClosed_failsafe                                   thrpt   10  2.876 ± 0.196  ops/us
-    SyncVsFailsafeBenchmark.testClosed_myLibSync                                  thrpt   10  6.756 ± 0.138  ops/us
-    SyncVsFailsafeBenchmark.testOpen_failsafe                                     thrpt   10  2.727 ± 0.529  ops/us
-    SyncVsFailsafeBenchmark.testOpen_myLibSync                                    thrpt   10  3.941 ± 0.305  ops/us
+    Benchmark                                                                     (loopLimit)   Mode  Cnt  Score   Error   Units
+    SyncVsFailsafeBenchmark.failsafe_halfOpenContention                                   N/A  thrpt   20  3.121 ± 0.120  ops/us
+    SyncVsFailsafeBenchmark.failsafe_halfOpenContention:breakerOpener_failsafe            N/A  thrpt   20  0.394 ± 0.014  ops/us
+    SyncVsFailsafeBenchmark.failsafe_halfOpenContention:breakerProber_failsafe            N/A  thrpt   20  2.727 ± 0.106  ops/us
+    SyncVsFailsafeBenchmark.myLibSync_halfOpenContention                                  N/A  thrpt   20  4.044 ± 0.057  ops/us
+    SyncVsFailsafeBenchmark.myLibSync_halfOpenContention:breakerOpener_myLibSync          N/A  thrpt   20  0.510 ± 0.008  ops/us
+    SyncVsFailsafeBenchmark.myLibSync_halfOpenContention:breakerProber_myLibSync          N/A  thrpt   20  3.533 ± 0.050  ops/us
+    SyncVsFailsafeBenchmark.testClosed_failsafe                                           100  thrpt   20  2.930 ± 0.055  ops/us
+    SyncVsFailsafeBenchmark.testClosed_myLibSync                                          100  thrpt   20  6.560 ± 0.043  ops/us
+    SyncVsFailsafeBenchmark.testOpen_failsafe                                             N/A  thrpt   20  3.058 ± 0.205  ops/us
+    SyncVsFailsafeBenchmark.testOpen_myLibSync                                            N/A  thrpt   20  3.731 ± 0.057  ops/us
 
 
 Lock free version vs Resilience4j:
 
-    Benchmark                                                                      Mode  Cnt  Score   Error   Units
-    LockFreeVsResilience4jBenchmark.myLib_halfOpenContention                      thrpt   10  4.883 ± 0.601  ops/us
-    LockFreeVsResilience4jBenchmark.myLib_halfOpenContention:breakerOpener_myLib  thrpt   10  0.631 ± 0.086  ops/us
-    LockFreeVsResilience4jBenchmark.myLib_halfOpenContention:breakerProber_myLib  thrpt   10  4.252 ± 0.517  ops/us
-    LockFreeVsResilience4jBenchmark.rs4j_halfOpenContention                       thrpt   10  2.851 ± 0.135  ops/us
-    LockFreeVsResilience4jBenchmark.rs4j_halfOpenContention:breakerOpener_rs4j    thrpt   10  0.350 ± 0.014  ops/us
-    LockFreeVsResilience4jBenchmark.rs4j_halfOpenContention:breakerProber_rs4j    thrpt   10  2.501 ± 0.121  ops/us
-    LockFreeVsResilience4jBenchmark.testClosed_myLib                              thrpt   10  2.807 ± 0.842  ops/us
-    LockFreeVsResilience4jBenchmark.testClosed_rs4j                               thrpt   10  3.605 ± 0.202  ops/us
-    LockFreeVsResilience4jBenchmark.testOpen_myLib                                thrpt   10  3.769 ± 0.183  ops/us
-    LockFreeVsResilience4jBenchmark.testOpen_rs4j                                 thrpt   10  2.712 ± 0.113  ops/us
+    Benchmark                                                                     (loopLimit)   Mode  Cnt  Score   Error   Units
+    SyncVsFailsafeBenchmark.failsafe_halfOpenContention                                   N/A  thrpt   20  3.121 ± 0.120  ops/us
+    SyncVsFailsafeBenchmark.failsafe_halfOpenContention:breakerOpener_failsafe            N/A  thrpt   20  0.394 ± 0.014  ops/us
+    SyncVsFailsafeBenchmark.failsafe_halfOpenContention:breakerProber_failsafe            N/A  thrpt   20  2.727 ± 0.106  ops/us
+    SyncVsFailsafeBenchmark.myLibSync_halfOpenContention                                  N/A  thrpt   20  4.044 ± 0.057  ops/us
+    SyncVsFailsafeBenchmark.myLibSync_halfOpenContention:breakerOpener_myLibSync          N/A  thrpt   20  0.510 ± 0.008  ops/us
+    SyncVsFailsafeBenchmark.myLibSync_halfOpenContention:breakerProber_myLibSync          N/A  thrpt   20  3.533 ± 0.050  ops/us
+    SyncVsFailsafeBenchmark.testClosed_failsafe                                           100  thrpt   20  2.930 ± 0.055  ops/us
+    SyncVsFailsafeBenchmark.testClosed_myLibSync                                          100  thrpt   20  6.560 ± 0.043  ops/us
+    SyncVsFailsafeBenchmark.testOpen_failsafe                                             N/A  thrpt   20  3.058 ± 0.205  ops/us
+    SyncVsFailsafeBenchmark.testOpen_myLibSync                                            N/A  thrpt   20  3.731 ± 0.057  ops/us
 
 Sync version vs Failsafe (with GC allocation):
 
-    Benchmark                                                                      Mode  Cnt     Score     Error   Units
-    SyncVsFailsafeBenchmark.failsafe_halfOpenContention                           thrpt   10     3.262 ±   0.459  ops/us
-    SyncVsFailsafeBenchmark.failsafe_halfOpenContention:breakerOpener_failsafe    thrpt   10     0.411 ±   0.054  ops/us
-    SyncVsFailsafeBenchmark.failsafe_halfOpenContention:breakerProber_failsafe    thrpt   10     2.851 ±   0.406  ops/us
-    SyncVsFailsafeBenchmark.failsafe_halfOpenContention:gc.alloc.rate             thrpt   10  3777.491 ± 535.196  MB/sec
-    SyncVsFailsafeBenchmark.failsafe_halfOpenContention:gc.alloc.rate.norm        thrpt   10  1214.606 ±   0.956    B/op
-    SyncVsFailsafeBenchmark.failsafe_halfOpenContention:gc.count                  thrpt   10   172.000            counts
-    SyncVsFailsafeBenchmark.failsafe_halfOpenContention:gc.time                   thrpt   10   167.000                ms
-    SyncVsFailsafeBenchmark.myLibSync_halfOpenContention                          thrpt   10     4.202 ±   0.265  ops/us
-    SyncVsFailsafeBenchmark.myLibSync_halfOpenContention:breakerOpener_myLibSync  thrpt   10     0.548 ±   0.032  ops/us
-    SyncVsFailsafeBenchmark.myLibSync_halfOpenContention:breakerProber_myLibSync  thrpt   10     3.654 ±   0.235  ops/us
-    SyncVsFailsafeBenchmark.myLibSync_halfOpenContention:gc.alloc.rate            thrpt   10  2902.033 ± 189.250  MB/sec
-    SyncVsFailsafeBenchmark.myLibSync_halfOpenContention:gc.alloc.rate.norm       thrpt   10   724.554 ±   3.039    B/op
-    SyncVsFailsafeBenchmark.myLibSync_halfOpenContention:gc.count                 thrpt   10   126.000            counts
-    SyncVsFailsafeBenchmark.myLibSync_halfOpenContention:gc.time                  thrpt   10   125.000                ms
-    SyncVsFailsafeBenchmark.testClosed_failsafe                                   thrpt   10     2.943 ±   0.300  ops/us
-    SyncVsFailsafeBenchmark.testClosed_failsafe:gc.alloc.rate                     thrpt   10  1526.137 ± 155.715  MB/sec
-    SyncVsFailsafeBenchmark.testClosed_failsafe:gc.alloc.rate.norm                thrpt   10   544.002 ±   0.001    B/op
-    SyncVsFailsafeBenchmark.testClosed_failsafe:gc.count                          thrpt   10   103.000            counts
-    SyncVsFailsafeBenchmark.testClosed_failsafe:gc.time                           thrpt   10    61.000                ms
-    SyncVsFailsafeBenchmark.testClosed_myLibSync                                  thrpt   10     6.864 ±   0.254  ops/us
-    SyncVsFailsafeBenchmark.testClosed_myLibSync:gc.alloc.rate                    thrpt   10   425.345 ±  15.655  MB/sec
-    SyncVsFailsafeBenchmark.testClosed_myLibSync:gc.alloc.rate.norm               thrpt   10    64.998 ±   0.033    B/op
-    SyncVsFailsafeBenchmark.testClosed_myLibSync:gc.count                         thrpt   10    29.000            counts
-    SyncVsFailsafeBenchmark.testClosed_myLibSync:gc.time                          thrpt   10    30.000                ms
-    SyncVsFailsafeBenchmark.testOpen_failsafe                                     thrpt   10     2.635 ±   0.509  ops/us
-    SyncVsFailsafeBenchmark.testOpen_failsafe:gc.alloc.rate                       thrpt   10  2973.720 ± 574.187  MB/sec
-    SyncVsFailsafeBenchmark.testOpen_failsafe:gc.alloc.rate.norm                  thrpt   10  1184.002 ±   0.001    B/op
-    SyncVsFailsafeBenchmark.testOpen_failsafe:gc.count                            thrpt   10   136.000            counts
-    SyncVsFailsafeBenchmark.testOpen_failsafe:gc.time                             thrpt   10   148.000                ms
-    SyncVsFailsafeBenchmark.testOpen_myLibSync                                    thrpt   10     3.964 ±   0.315  ops/us
-    SyncVsFailsafeBenchmark.testOpen_myLibSync:gc.alloc.rate                      thrpt   10  2750.370 ± 217.850  MB/sec
-    SyncVsFailsafeBenchmark.testOpen_myLibSync:gc.alloc.rate.norm                 thrpt   10   728.002 ±   0.001    B/op
-    SyncVsFailsafeBenchmark.testOpen_myLibSync:gc.count                           thrpt   10   138.000            counts
-    SyncVsFailsafeBenchmark.testOpen_myLibSync:gc.time                            thrpt   10   131.000                ms
+    Benchmark                                                                     (loopLimit)   Mode  Cnt     Score     Error   Units
+    SyncVsFailsafeBenchmark.failsafe_halfOpenContention                                   N/A  thrpt   20     3.145 ±   0.214  ops/us
+    SyncVsFailsafeBenchmark.failsafe_halfOpenContention:breakerOpener_failsafe            N/A  thrpt   20     0.392 ±   0.027  ops/us
+    SyncVsFailsafeBenchmark.failsafe_halfOpenContention:breakerProber_failsafe            N/A  thrpt   20     2.753 ±   0.187  ops/us
+    SyncVsFailsafeBenchmark.failsafe_halfOpenContention:gc.alloc.rate                     N/A  thrpt   20  3329.139 ± 228.556  MB/sec
+    SyncVsFailsafeBenchmark.failsafe_halfOpenContention:gc.alloc.rate.norm                N/A  thrpt   20  1110.075 ±   0.770    B/op
+    SyncVsFailsafeBenchmark.failsafe_halfOpenContention:gc.count                          N/A  thrpt   20   682.000            counts
+    SyncVsFailsafeBenchmark.failsafe_halfOpenContention:gc.time                           N/A  thrpt   20   722.000                ms
+    SyncVsFailsafeBenchmark.myLibSync_halfOpenContention                                  N/A  thrpt   20     3.873 ±   0.067  ops/us
+    SyncVsFailsafeBenchmark.myLibSync_halfOpenContention:breakerOpener_myLibSync          N/A  thrpt   20     0.490 ±   0.009  ops/us
+    SyncVsFailsafeBenchmark.myLibSync_halfOpenContention:breakerProber_myLibSync          N/A  thrpt   20     3.383 ±   0.058  ops/us
+    SyncVsFailsafeBenchmark.myLibSync_halfOpenContention:gc.alloc.rate                    N/A  thrpt   20  2669.874 ±  48.897  MB/sec
+    SyncVsFailsafeBenchmark.myLibSync_halfOpenContention:gc.alloc.rate.norm               N/A  thrpt   20   723.026 ±   1.052    B/op
+    SyncVsFailsafeBenchmark.myLibSync_halfOpenContention:gc.count                         N/A  thrpt   20   578.000            counts
+    SyncVsFailsafeBenchmark.myLibSync_halfOpenContention:gc.time                          N/A  thrpt   20   637.000                ms
+    SyncVsFailsafeBenchmark.testClosed_failsafe                                           100  thrpt   20     2.802 ±   0.049  ops/us
+    SyncVsFailsafeBenchmark.testClosed_failsafe:gc.alloc.rate                             100  thrpt   20  1218.528 ±  21.131  MB/sec
+    SyncVsFailsafeBenchmark.testClosed_failsafe:gc.alloc.rate.norm                        100  thrpt   20   456.001 ±   0.001    B/op
+    SyncVsFailsafeBenchmark.testClosed_failsafe:gc.count                                  100  thrpt   20   409.000            counts
+    SyncVsFailsafeBenchmark.testClosed_failsafe:gc.time                                   100  thrpt   20   248.000                ms
+    SyncVsFailsafeBenchmark.testClosed_myLibSync                                          100  thrpt   20     6.659 ±   0.226  ops/us
+    SyncVsFailsafeBenchmark.testClosed_myLibSync:gc.alloc.rate                            100  thrpt   20   514.758 ±  17.440  MB/sec
+    SyncVsFailsafeBenchmark.testClosed_myLibSync:gc.alloc.rate.norm                       100  thrpt   20    81.071 ±   0.008    B/op
+    SyncVsFailsafeBenchmark.testClosed_myLibSync:gc.count                                 100  thrpt   20   174.000            counts
+    SyncVsFailsafeBenchmark.testClosed_myLibSync:gc.time                                  100  thrpt   20   123.000                ms
+    SyncVsFailsafeBenchmark.testOpen_failsafe                                             N/A  thrpt   20     2.961 ±   0.180  ops/us
+    SyncVsFailsafeBenchmark.testOpen_failsafe:gc.alloc.rate                               N/A  thrpt   20  3049.509 ± 185.463  MB/sec
+    SyncVsFailsafeBenchmark.testOpen_failsafe:gc.alloc.rate.norm                          N/A  thrpt   20  1080.001 ±   0.001    B/op
+    SyncVsFailsafeBenchmark.testOpen_failsafe:gc.count                                    N/A  thrpt   20   699.000            counts
+    SyncVsFailsafeBenchmark.testOpen_failsafe:gc.time                                     N/A  thrpt   20   743.000                ms
+    SyncVsFailsafeBenchmark.testOpen_myLibSync                                            N/A  thrpt   20     3.849 ±   0.059  ops/us
+    SyncVsFailsafeBenchmark.testOpen_myLibSync:gc.alloc.rate                              N/A  thrpt   20  2671.566 ±  40.757  MB/sec
+    SyncVsFailsafeBenchmark.testOpen_myLibSync:gc.alloc.rate.norm                         N/A  thrpt   20   728.001 ±   0.001    B/op
+    SyncVsFailsafeBenchmark.testOpen_myLibSync:gc.count                                   N/A  thrpt   20   681.000            counts
+    SyncVsFailsafeBenchmark.testOpen_myLibSync:gc.time                                    N/A  thrpt   20   718.000                ms
 
 Lock free version vs Resilience4j (with GC allocation):
 
-    Benchmark                                                                      Mode  Cnt     Score     Error   Units
-    LockFreeVsResilience4jBenchmark.myLib_halfOpenContention                      thrpt   10     4.518 ±   0.334  ops/us
-    LockFreeVsResilience4jBenchmark.myLib_halfOpenContention:breakerOpener_myLib  thrpt   10     0.579 ±   0.059  ops/us
-    LockFreeVsResilience4jBenchmark.myLib_halfOpenContention:breakerProber_myLib  thrpt   10     3.939 ±   0.284  ops/us
-    LockFreeVsResilience4jBenchmark.myLib_halfOpenContention:gc.alloc.rate        thrpt   10  3174.308 ± 236.505  MB/sec
-    LockFreeVsResilience4jBenchmark.myLib_halfOpenContention:gc.alloc.rate.norm   thrpt   10   737.070 ±   0.881    B/op
-    LockFreeVsResilience4jBenchmark.myLib_halfOpenContention:gc.count             thrpt   10   132.000            counts
-    LockFreeVsResilience4jBenchmark.myLib_halfOpenContention:gc.time              thrpt   10   118.000                ms
-    LockFreeVsResilience4jBenchmark.rs4j_halfOpenContention                       thrpt   10     2.790 ±   0.180  ops/us
-    LockFreeVsResilience4jBenchmark.rs4j_halfOpenContention:breakerOpener_rs4j    thrpt   10     0.350 ±   0.017  ops/us
-    LockFreeVsResilience4jBenchmark.rs4j_halfOpenContention:breakerProber_rs4j    thrpt   10     2.440 ±   0.163  ops/us
-    LockFreeVsResilience4jBenchmark.rs4j_halfOpenContention:gc.alloc.rate         thrpt   10  3820.393 ± 450.208  MB/sec
-    LockFreeVsResilience4jBenchmark.rs4j_halfOpenContention:gc.alloc.rate.norm    thrpt   10  1434.228 ±  81.479    B/op
-    LockFreeVsResilience4jBenchmark.rs4j_halfOpenContention:gc.count              thrpt   10   159.000            counts
-    LockFreeVsResilience4jBenchmark.rs4j_halfOpenContention:gc.time               thrpt   10   157.000                ms
-    LockFreeVsResilience4jBenchmark.testClosed_myLib                              thrpt   10     3.071 ±   0.802  ops/us
-    LockFreeVsResilience4jBenchmark.testClosed_myLib:gc.alloc.rate                thrpt   10   187.379 ±  48.942  MB/sec
-    LockFreeVsResilience4jBenchmark.testClosed_myLib:gc.alloc.rate.norm           thrpt   10    64.001 ±   0.001    B/op
-    LockFreeVsResilience4jBenchmark.testClosed_myLib:gc.count                     thrpt   10    13.000            counts
-    LockFreeVsResilience4jBenchmark.testClosed_myLib:gc.time                      thrpt   10    18.000                ms
-    LockFreeVsResilience4jBenchmark.testClosed_rs4j                               thrpt   10     3.825 ±   0.316  ops/us
-    LockFreeVsResilience4jBenchmark.testClosed_rs4j:gc.alloc.rate                 thrpt   10   262.538 ±  21.750  MB/sec
-    LockFreeVsResilience4jBenchmark.testClosed_rs4j:gc.alloc.rate.norm            thrpt   10    72.000 ±   0.001    B/op
-    LockFreeVsResilience4jBenchmark.testClosed_rs4j:gc.count                      thrpt   10    18.000            counts
-    LockFreeVsResilience4jBenchmark.testClosed_rs4j:gc.time                       thrpt   10    20.000                ms
-    LockFreeVsResilience4jBenchmark.testOpen_myLib                                thrpt   10     3.773 ±   0.233  ops/us
-    LockFreeVsResilience4jBenchmark.testOpen_myLib:gc.alloc.rate                  thrpt   10  2618.189 ± 160.988  MB/sec
-    LockFreeVsResilience4jBenchmark.testOpen_myLib:gc.alloc.rate.norm             thrpt   10   728.002 ±   0.001    B/op
-    LockFreeVsResilience4jBenchmark.testOpen_myLib:gc.count                       thrpt   10   130.000            counts
-    LockFreeVsResilience4jBenchmark.testOpen_myLib:gc.time                        thrpt   10   132.000                ms
-    LockFreeVsResilience4jBenchmark.testOpen_rs4j                                 thrpt   10     2.892 ±   0.132  ops/us
-    LockFreeVsResilience4jBenchmark.testOpen_rs4j:gc.alloc.rate                   thrpt   10  3506.734 ± 160.838  MB/sec
-    LockFreeVsResilience4jBenchmark.testOpen_rs4j:gc.alloc.rate.norm              thrpt   10  1272.001 ±   0.001    B/op
-    LockFreeVsResilience4jBenchmark.testOpen_rs4j:gc.count                        thrpt   10   147.000            counts
-    LockFreeVsResilience4jBenchmark.testOpen_rs4j:gc.time                         thrpt   10   149.000                ms
+    Benchmark                                                                     (loopLimit)   Mode  Cnt     Score     Error   Units
+    LockFreeVsResilience4jBenchmark.myLib_halfOpenContention                              N/A  thrpt   20     4.476 ±   0.182  ops/us
+    LockFreeVsResilience4jBenchmark.myLib_halfOpenContention:breakerOpener_myLib          N/A  thrpt   20     0.553 ±   0.023  ops/us
+    LockFreeVsResilience4jBenchmark.myLib_halfOpenContention:breakerProber_myLib          N/A  thrpt   20     3.923 ±   0.159  ops/us
+    LockFreeVsResilience4jBenchmark.myLib_halfOpenContention:gc.alloc.rate                N/A  thrpt   20  3144.232 ± 130.305  MB/sec
+    LockFreeVsResilience4jBenchmark.myLib_halfOpenContention:gc.alloc.rate.norm           N/A  thrpt   20   736.637 ±   0.650    B/op
+    LockFreeVsResilience4jBenchmark.myLib_halfOpenContention:gc.count                     N/A  thrpt   20   657.000            counts
+    LockFreeVsResilience4jBenchmark.myLib_halfOpenContention:gc.time                      N/A  thrpt   20   652.000                ms
+    LockFreeVsResilience4jBenchmark.rs4j_halfOpenContention                               N/A  thrpt   20     2.534 ±   0.110  ops/us
+    LockFreeVsResilience4jBenchmark.rs4j_halfOpenContention:breakerOpener_rs4j            N/A  thrpt   20     0.317 ±   0.012  ops/us
+    LockFreeVsResilience4jBenchmark.rs4j_halfOpenContention:breakerProber_rs4j            N/A  thrpt   20     2.216 ±   0.098  ops/us
+    LockFreeVsResilience4jBenchmark.rs4j_halfOpenContention:gc.alloc.rate                 N/A  thrpt   20  3392.048 ± 152.417  MB/sec
+    LockFreeVsResilience4jBenchmark.rs4j_halfOpenContention:gc.alloc.rate.norm            N/A  thrpt   20  1403.959 ±  11.894    B/op
+    LockFreeVsResilience4jBenchmark.rs4j_halfOpenContention:gc.count                      N/A  thrpt   20   778.000            counts
+    LockFreeVsResilience4jBenchmark.rs4j_halfOpenContention:gc.time                       N/A  thrpt   20   808.000                ms
+    LockFreeVsResilience4jBenchmark.testClosed_myLib                                      100  thrpt   20     2.927 ±   0.250  ops/us
+    LockFreeVsResilience4jBenchmark.testClosed_myLib:gc.alloc.rate                        100  thrpt   20   223.301 ±  19.088  MB/sec
+    LockFreeVsResilience4jBenchmark.testClosed_myLib:gc.alloc.rate.norm                   100  thrpt   20    80.000 ±   0.001    B/op
+    LockFreeVsResilience4jBenchmark.testClosed_myLib:gc.count                             100  thrpt   20    76.000            counts
+    LockFreeVsResilience4jBenchmark.testClosed_myLib:gc.time                              100  thrpt   20    63.000                ms
+    LockFreeVsResilience4jBenchmark.testClosed_rs4j                                       100  thrpt   20     3.223 ±   0.333  ops/us
+    LockFreeVsResilience4jBenchmark.testClosed_rs4j:gc.alloc.rate                         100  thrpt   20   270.414 ±  27.982  MB/sec
+    LockFreeVsResilience4jBenchmark.testClosed_rs4j:gc.alloc.rate.norm                    100  thrpt   20    88.000 ±   0.001    B/op
+    LockFreeVsResilience4jBenchmark.testClosed_rs4j:gc.count                              100  thrpt   20    90.000            counts
+    LockFreeVsResilience4jBenchmark.testClosed_rs4j:gc.time                               100  thrpt   20    54.000                ms
+    LockFreeVsResilience4jBenchmark.testOpen_myLib                                        N/A  thrpt   20     4.148 ±   0.099  ops/us
+    LockFreeVsResilience4jBenchmark.testOpen_myLib:gc.alloc.rate                          N/A  thrpt   20  2879.229 ±  68.987  MB/sec
+    LockFreeVsResilience4jBenchmark.testOpen_myLib:gc.alloc.rate.norm                     N/A  thrpt   20   728.001 ±   0.001    B/op
+    LockFreeVsResilience4jBenchmark.testOpen_myLib:gc.count                               N/A  thrpt   20   651.000            counts
+    LockFreeVsResilience4jBenchmark.testOpen_myLib:gc.time                                N/A  thrpt   20   668.000                ms
+    LockFreeVsResilience4jBenchmark.testOpen_rs4j                                         N/A  thrpt   20     2.813 ±   0.041  ops/us
+    LockFreeVsResilience4jBenchmark.testOpen_rs4j:gc.alloc.rate                           N/A  thrpt   20  3411.410 ±  49.410  MB/sec
+    LockFreeVsResilience4jBenchmark.testOpen_rs4j:gc.alloc.rate.norm                      N/A  thrpt   20  1272.000 ±   0.001    B/op
+    LockFreeVsResilience4jBenchmark.testOpen_rs4j:gc.count                                N/A  thrpt   20   714.000            counts
+    LockFreeVsResilience4jBenchmark.testOpen_rs4j:gc.time                                 N/A  thrpt   20   728.000                ms

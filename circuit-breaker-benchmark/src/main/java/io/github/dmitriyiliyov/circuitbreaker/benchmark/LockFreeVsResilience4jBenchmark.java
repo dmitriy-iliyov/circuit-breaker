@@ -9,6 +9,7 @@ import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.providers.
 import io.github.resilience4j.circuitbreaker.CircuitBreakerConfig;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
+import org.openjdk.jmh.results.format.ResultFormatType;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
@@ -21,8 +22,8 @@ import java.util.concurrent.TimeUnit;
 
 @BenchmarkMode(Mode.Throughput)
 @OutputTimeUnit(TimeUnit.MICROSECONDS)
-@Warmup(iterations = 3, time = 1)
-@Measurement(iterations = 5, time = 2)
+@Warmup(iterations = 5, time = 5000, timeUnit = TimeUnit.MILLISECONDS)
+@Measurement(iterations = 10, time = 5000, timeUnit = TimeUnit.MILLISECONDS)
 @Fork(2)
 @Threads(8)
 public class LockFreeVsResilience4jBenchmark {
@@ -40,6 +41,9 @@ public class LockFreeVsResilience4jBenchmark {
 
     @State(Scope.Benchmark)
     public static class ClosedState {
+
+        @Param("100")
+        int loopLimit;
         CircuitBreaker myLib;
         io.github.resilience4j.circuitbreaker.CircuitBreaker rs4j;
 
@@ -62,7 +66,7 @@ public class LockFreeVsResilience4jBenchmark {
     public void testClosed_myLib(ClosedState state, Blackhole bh) {
         bh.consume(executeMy(state.myLib, () -> {
             int sum = 0;
-            for (int i = 0; i < 100; i++) {
+            for (int i = 0; i < state.loopLimit; i++) {
                 sum += i;
             }
             return "ok" + sum;
@@ -73,7 +77,7 @@ public class LockFreeVsResilience4jBenchmark {
     public void testClosed_rs4j(ClosedState state, Blackhole bh) {
         bh.consume(executeRs4j(state.rs4j, () -> {
             int sum = 0;
-            for (int i = 0; i < 100; i++) {
+            for (int i = 0; i < state.loopLimit; i++) {
                 sum += i;
             }
             return "ok" + sum;
@@ -82,6 +86,7 @@ public class LockFreeVsResilience4jBenchmark {
 
     @State(Scope.Benchmark)
     public static class OpenState {
+
         CircuitBreaker myLib;
         io.github.resilience4j.circuitbreaker.CircuitBreaker rs4j;
 
@@ -118,6 +123,7 @@ public class LockFreeVsResilience4jBenchmark {
 
     @State(Scope.Group)
     public static class HalfOpenState {
+
         CircuitBreaker myLib;
         io.github.resilience4j.circuitbreaker.CircuitBreaker rs4j;
 
@@ -190,6 +196,8 @@ public class LockFreeVsResilience4jBenchmark {
     public static void main(String[] args) throws RunnerException {
         Options opt = new OptionsBuilder()
                 .include(LockFreeVsResilience4jBenchmark.class.getSimpleName())
+                .resultFormat(ResultFormatType.JSON)
+                .result("jmh_lockfree_res4j_result.json")
                 .build();
         new Runner(opt).run();
     }

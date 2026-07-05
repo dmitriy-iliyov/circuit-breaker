@@ -1,6 +1,7 @@
 package io.github.dmitriyiliyov.circuitbreaker.benchmark;
 
 import dev.failsafe.Failsafe;
+import dev.failsafe.FailsafeExecutor;
 import io.github.dmitriyiliyov.circuitbreaker.core.CircuitBreaker;
 import io.github.dmitriyiliyov.circuitbreaker.core.CircuitBreakerFactory;
 import io.github.dmitriyiliyov.circuitbreaker.core.DefaultCircuitBreakerFactory;
@@ -9,6 +10,7 @@ import io.github.dmitriyiliyov.circuitbreaker.core.config.CircuitBreakerConfigur
 import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.providers.*;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
+import org.openjdk.jmh.results.format.ResultFormatType;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
@@ -21,8 +23,8 @@ import java.util.concurrent.TimeUnit;
 
 @BenchmarkMode(Mode.Throughput)
 @OutputTimeUnit(TimeUnit.MICROSECONDS)
-@Warmup(iterations = 3, time = 1)
-@Measurement(iterations = 5, time = 2)
+@Warmup(iterations = 5, time = 5000, timeUnit = TimeUnit.MILLISECONDS)
+@Measurement(iterations = 10, time = 5000, timeUnit = TimeUnit.MILLISECONDS)
 @Fork(2)
 @Threads(8)
 public class SyncVsFailsafeBenchmark {
@@ -40,8 +42,11 @@ public class SyncVsFailsafeBenchmark {
 
     @State(Scope.Benchmark)
     public static class ClosedState {
+
+        @Param("100")
+        int loopLimit;
         CircuitBreaker myLibSync;
-        dev.failsafe.CircuitBreaker<Object> failsafeCb;
+        FailsafeExecutor<Object> failsafeCbExecutor;
 
         @Setup(Level.Trial)
         public void setup() {
@@ -53,10 +58,12 @@ public class SyncVsFailsafeBenchmark {
                     .waitDurationInOpenState(Duration.ofMillis(1))
                     .build());
 
-            failsafeCb = dev.failsafe.CircuitBreaker.builder()
+            dev.failsafe.CircuitBreaker<Object> failsafeCb = dev.failsafe.CircuitBreaker.builder()
                     .handle(RuntimeException.class)
                     .withFailureThreshold(500, 1000)
                     .build();
+
+            failsafeCbExecutor = Failsafe.with(failsafeCb);
         }
     }
 
@@ -64,7 +71,7 @@ public class SyncVsFailsafeBenchmark {
     public void testClosed_myLibSync(ClosedState state, Blackhole bh) {
         bh.consume(executeMy(state.myLibSync, () -> {
             int sum = 0;
-            for (int i = 0; i < 100; i++) {
+            for (int i = 0; i < state.loopLimit; i++) {
                 sum += i;
             }
             return "ok" + sum;
@@ -73,9 +80,9 @@ public class SyncVsFailsafeBenchmark {
 
     @Benchmark
     public void testClosed_failsafe(ClosedState state, Blackhole bh) {
-        bh.consume(executeFailsafe(state.failsafeCb, () -> {
+        bh.consume(executeFailsafe(state.failsafeCbExecutor, () -> {
             int sum = 0;
-            for (int i = 0; i < 100; i++) {
+            for (int i = 0; i < state.loopLimit; i++) {
                 sum += i;
             }
             return "ok" + sum;
@@ -84,8 +91,9 @@ public class SyncVsFailsafeBenchmark {
 
     @State(Scope.Benchmark)
     public static class OpenState {
+
         CircuitBreaker myLibSync;
-        dev.failsafe.CircuitBreaker<Object> failsafeCb;
+        FailsafeExecutor<Object> failsafeCbExecutor;
 
         @Setup(Level.Trial)
         public void setup() {
@@ -97,13 +105,20 @@ public class SyncVsFailsafeBenchmark {
                     .waitDurationInOpenState(Duration.ofHours(1))
                     .build());
 
-            failsafeCb = dev.failsafe.CircuitBreaker.builder()
+            dev.failsafe.CircuitBreaker<Object> failsafeCb = dev.failsafe.CircuitBreaker.builder()
                     .handle(RuntimeException.class)
                     .withFailureThreshold(1)
                     .withDelay(Duration.ofHours(1))
                     .build();
 
-            try { myLibSync.execute(() -> { throw new RuntimeException(); }); } catch (Throwable ignored) {}
+            failsafeCbExecutor = Failsafe.with(failsafeCb);
+
+            try {
+                myLibSync.execute(() -> {
+                    throw new RuntimeException();
+                });
+            } catch (Throwable ignored) {}
+
             failsafeCb.open();
         }
     }
@@ -115,13 +130,14 @@ public class SyncVsFailsafeBenchmark {
 
     @Benchmark
     public void testOpen_failsafe(OpenState state, Blackhole bh) {
-        bh.consume(executeFailsafe(state.failsafeCb, () -> "should_fail"));
+        bh.consume(executeFailsafe(state.failsafeCbExecutor, () -> "should_fail"));
     }
 
     @State(Scope.Group)
     public static class HalfOpenState {
+
         CircuitBreaker myLibSync;
-        dev.failsafe.CircuitBreaker<Object> failsafeCb;
+        FailsafeExecutor<Object> failsafeCbExecutor;
 
         @Setup(Level.Trial)
         public void setup() {
@@ -135,12 +151,14 @@ public class SyncVsFailsafeBenchmark {
                             .maxExceptionCountInHalfOpenState(1))
                     .build());
 
-            failsafeCb = dev.failsafe.CircuitBreaker.builder()
+            dev.failsafe.CircuitBreaker<Object> failsafeCb = dev.failsafe.CircuitBreaker.builder()
                     .handle(RuntimeException.class)
                     .withFailureThreshold(1, 5)
                     .withDelay(Duration.ofMillis(1))
                     .withSuccessThreshold(3)
                     .build();
+
+            failsafeCbExecutor = Failsafe.with(failsafeCb);
         }
     }
 
@@ -162,14 +180,14 @@ public class SyncVsFailsafeBenchmark {
     @Group("failsafe_halfOpenContention")
     @GroupThreads(1)
     public void breakerOpener_failsafe(HalfOpenState state, Blackhole bh) {
-        bh.consume(executeFailsafe(state.failsafeCb, () -> { throw new RuntimeException(); }));
+        bh.consume(executeFailsafe(state.failsafeCbExecutor, () -> { throw new RuntimeException(); }));
     }
 
     @Benchmark
     @Group("failsafe_halfOpenContention")
     @GroupThreads(7)
     public void breakerProber_failsafe(HalfOpenState state, Blackhole bh) {
-        bh.consume(executeFailsafe(state.failsafeCb, () -> "probe"));
+        bh.consume(executeFailsafe(state.failsafeCbExecutor, () -> "probe"));
     }
 
     private static String executeMy(CircuitBreaker cb, java.util.function.Supplier<String> supplier) {
@@ -180,9 +198,9 @@ public class SyncVsFailsafeBenchmark {
         }
     }
 
-    private static String executeFailsafe(dev.failsafe.CircuitBreaker<Object> cb, java.util.function.Supplier<String> supplier) {
+    private static String executeFailsafe(FailsafeExecutor<Object> cb, java.util.function.Supplier<String> supplier) {
         try {
-            return Failsafe.with(cb).get(supplier::get);
+            return cb.get(supplier::get);
         } catch (Throwable t) {
             return "fallback";
         }
@@ -191,6 +209,8 @@ public class SyncVsFailsafeBenchmark {
     public static void main(String[] args) throws RunnerException {
         Options opt = new OptionsBuilder()
                 .include(SyncVsFailsafeBenchmark.class.getSimpleName())
+                .resultFormat(ResultFormatType.JSON)
+                .result("jmh_sync_failsafe_result.json")
                 .build();
         new Runner(opt).run();
     }
