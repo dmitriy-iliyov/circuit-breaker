@@ -37,6 +37,30 @@ class OpenStateUnitTests {
     }
 
     @Test
+    @DisplayName("execute(supplier): should throw exception without stack trace when call is rejected")
+    void supplier_execute_shouldThrowExceptionWithoutStackTrace_whenCallRejected() {
+        when(strategy.shouldTransition()).thenReturn(false);
+
+        assertThatThrownBy(() -> openState.execute(() -> "result"))
+                .isInstanceOf(CircuitBreakerOpenException.class)
+                .satisfies(e -> assertThat(e.getStackTrace()).isEmpty());
+    }
+
+    @Test
+    @DisplayName("execute(supplier): should keep suppression enabled on rejection exception")
+    void supplier_execute_shouldKeepSuppressionEnabled_whenCallRejected() {
+        when(strategy.shouldTransition()).thenReturn(false);
+        IllegalStateException suppressed = new IllegalStateException("close failed");
+
+        assertThatThrownBy(() -> openState.execute(() -> "result"))
+                .isInstanceOf(CircuitBreakerOpenException.class)
+                .satisfies(e -> {
+                    e.addSuppressed(suppressed);
+                    assertThat(e.getSuppressed()).containsExactly(suppressed);
+                });
+    }
+
+    @Test
     @DisplayName("execute(supplier): should throw exceptionSupplier when state transition fails")
     void supplier_execute_shouldThrowException_whenStateTransitionFails() {
         when(strategy.shouldTransition()).thenReturn(true);
