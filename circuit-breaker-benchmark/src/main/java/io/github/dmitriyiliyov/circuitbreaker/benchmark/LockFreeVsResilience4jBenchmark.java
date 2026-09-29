@@ -48,6 +48,7 @@ public class LockFreeVsResilience4jBenchmark {
                     CircuitBreakerConfig.custom()
                             .slidingWindowSize(1000).failureRateThreshold(50f)
                             .waitDurationInOpenState(Duration.ofHours(1))
+                            .writableStackTraceEnabled(false)
                             .build());
         }
     }
@@ -82,6 +83,7 @@ public class LockFreeVsResilience4jBenchmark {
                     CircuitBreakerConfig.custom()
                             .slidingWindowSize(2).failureRateThreshold(10f)
                             .waitDurationInOpenState(Duration.ofHours(1))
+                            .writableStackTraceEnabled(false)
                             .build());
 
             try {
@@ -128,6 +130,7 @@ public class LockFreeVsResilience4jBenchmark {
                             .slidingWindowSize(5).failureRateThreshold(10f)
                             .waitDurationInOpenState(Duration.ofMillis(1))
                             .permittedNumberOfCallsInHalfOpenState(3)
+                            .writableStackTraceEnabled(false)
                             .build());
         }
     }
