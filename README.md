@@ -21,14 +21,20 @@ This library is an exploratory implementation of the [Circuit Breaker Pattern](h
 
 ## Quick Start
 
-1. Add dependency
+1. Add dependencies
 ```xml
   <dependency>
       <groupId>io.github.dmitriy-iliyov</groupId>
       <artifactId>circuit-breaker-starter</artifactId>
       <version>1.0.1</version>
   </dependency>
+
+  <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-aop</artifactId>
+  </dependency>
 ```
+`spring-boot-starter-aop` is required: the `@CircuitBreaker` annotation is handled by an AspectJ aspect, and the starter does not bring AspectJ transitively. Without it the application fails on startup with `NoClassDefFoundError: org/aspectj/lang/ProceedingJoinPoint`. 
 
 2. Enable circuit breaker support
 ```java
