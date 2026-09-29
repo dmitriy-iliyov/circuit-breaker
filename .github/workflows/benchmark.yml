@@ -55,26 +55,35 @@ jobs:
           GROUP_THREADS: ${{ inputs.group_threads }}
           EXTRA_ARGS: ${{ inputs.extra_args }}
         run: |
+          set -o pipefail
           PROF_ARGS=""
           if [ "$PROFILER" != "none" ]; then
             PROF_ARGS="-prof $PROFILER"
           fi
-          java -jar circuit-breaker-benchmark/target/benchmarks.jar "$BENCHMARK" \
-              -t "$THREADS" -tg "$GROUP_THREADS" $PROF_ARGS $EXTRA_ARGS \
-              -rf json -rff result.json | tee result.txt
+          # -tg is applied to every benchmark of a run and fails non-group ones,
+          # so group (half-open) and plain (closed, open) benchmarks run separately
+          java -jar circuit-breaker-benchmark/target/benchmarks.jar "${BENCHMARK}\..*_halfOpenContention" \
+              -t "$THREADS" -tg "$GROUP_THREADS" -foe true $PROF_ARGS $EXTRA_ARGS \
+              -rf json -rff result-groups.json | tee result-groups.txt
+          java -jar circuit-breaker-benchmark/target/benchmarks.jar "${BENCHMARK}\.test" \
+              -t "$THREADS" -foe true $PROF_ARGS $EXTRA_ARGS \
+              -rf json -rff result-plain.json | tee result-plain.txt
 
       - name: Publish summary
         env:
           BENCHMARK: ${{ matrix.benchmark }}
           PROFILER: ${{ matrix.profiler }}
+          THREADS: ${{ inputs.threads }}
+          GROUP_THREADS: ${{ inputs.group_threads }}
         run: |
           {
             echo "### $BENCHMARK (profiler: $PROFILER)"
             echo
-            echo "CPU: $(lscpu | sed -n 's/^Model name:[[:space:]]*//p'), nproc: $(nproc)"
+            echo "CPU: $(lscpu | sed -n 's/^Model name:[[:space:]]*//p'), nproc: $(nproc), -t $THREADS, -tg $GROUP_THREADS"
             echo
             echo '```'
-            sed -n '/^Benchmark  /,/^$/p' result.txt
+            sed -n '/^Benchmark  /,/^$/p' result-groups.txt
+            sed -n '/^Benchmark  /,/^$/p' result-plain.txt
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
@@ -83,6 +92,6 @@ jobs:
         with:
           name: ${{ matrix.benchmark }}-${{ matrix.profiler }}
           path: |
-            result.json
-            result.txt
+            result-*.json
+            result-*.txt
             hardware.txt
