@@ -15,7 +15,7 @@ This library is an exploratory implementation of the [Circuit Breaker Pattern](h
     - **Sliding Window** - monitors recent requests to decide when to trip the circuit based on failure rate or count.
     - **Time-based** - keeps the circuit open for a configurable duration, allowing the downstream service time to recover.
     - **Count-based** - allows a limited number of trial requests to pass through to test if the downstream service has recovered.
-- **Slow request detector** - detect and consider slow requests as exceptions.
+- **Slow request detector** - detects slow requests and treats them as failures.
 - **Lock-Free Implementations** - each strategy has a corresponding lock-free version.
 - **Gradual Half-Open State** - extra state that implements a gradually increasing load in accordance with the multiplier.
 
@@ -30,14 +30,25 @@ This library is an exploratory implementation of the [Circuit Breaker Pattern](h
   </dependency>
 ```
 
-2. Create circuit breaker as Bean
+2. Enable circuit breaker support
+```java
+@SpringBootApplication
+@EnableCircuitBreaker
+public class Application {
+    public static void main(String[] args) {
+        SpringApplication.run(Application.class, args);
+    }
+}
+```
+
+3. Create circuit breaker as Bean
 ```java
 @Bean
 public CircuitBreaker circuitBreaker(CircuitBreakerFactory circuitBreakerFactory) {
   CircuitBreakerConfiguration configuration = CircuitBreakerConfiguration.builder()
-          .name("circuitBreakerInstance")
+          .name("exampleCircuitBreaker")
           .observableExceptions(Set.of(SpecificBusinessException.class))
-          .ignorableExceptions(Set.of(IgnorableException.class))
+          .ignorableExceptions(Set.of(IllegalArgumentException.class))
           .exceptionPriority(ExceptionPriority.IGNORABLE)
           .maxRequestExecutionDuration(Duration.ofMillis(100))
           .lockFree(true)
@@ -53,11 +64,11 @@ public CircuitBreaker circuitBreaker(CircuitBreakerFactory circuitBreakerFactory
                   .maxExceptionCountInHalfOpenState(2)
           )
           .build();
-  return circuitBreakerFactory.of(configuration);
+  return circuitBreakerFactory.create(configuration);
 }
 ```
 
-3. Use in service
+4. Use in service
 ```java
 @Service
 public class BusinessService {
@@ -97,7 +108,7 @@ Sync version vs Failsafe:
     SyncVsFailsafeBenchmark.testOpen_myLibSync                                            N/A  thrpt   20  3.731 ± 0.057  ops/us
 
 
-Lock free version vs Resilience4j:
+Lock-free version vs Resilience4j:
 
     Benchmark                                                                     (loopLimit)   Mode  Cnt  Score   Error   Units
     SyncVsFailsafeBenchmark.failsafe_halfOpenContention                                   N/A  thrpt   20  3.121 ± 0.120  ops/us
@@ -149,7 +160,7 @@ Sync version vs Failsafe (with GC allocation):
     SyncVsFailsafeBenchmark.testOpen_myLibSync:gc.count                                   N/A  thrpt   20   681.000            counts
     SyncVsFailsafeBenchmark.testOpen_myLibSync:gc.time                                    N/A  thrpt   20   718.000                ms
 
-Lock free version vs Resilience4j (with GC allocation):
+Lock-free version vs Resilience4j (with GC allocation):
 
     Benchmark                                                                     (loopLimit)   Mode  Cnt     Score     Error   Units
     LockFreeVsResilience4jBenchmark.myLib_halfOpenContention                              N/A  thrpt   20     4.476 ±   0.182  ops/us
