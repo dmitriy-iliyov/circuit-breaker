@@ -11,7 +11,7 @@
 
     <groupId>io.github.dmitriy-iliyov</groupId>
     <artifactId>circuit-breaker-example</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
 
     <name>circuit-breaker-example</name>
 
@@ -37,7 +37,7 @@
         <dependency>
             <groupId>io.github.dmitriy-iliyov</groupId>
             <artifactId>circuit-breaker-starter</artifactId>
-            <version>1.0.0</version>
+            <version>1.0.1</version>
         </dependency>
 
         <dependency>

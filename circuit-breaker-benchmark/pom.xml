@@ -6,7 +6,7 @@
 
     <groupId>io.github.dmitriy-iliyov</groupId>
     <artifactId>circuit-breaker-benchmark</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
 
     <properties>
         <maven.compiler.source>21</maven.compiler.source>
@@ -31,7 +31,7 @@
         <dependency>
             <groupId>io.github.dmitriy-iliyov</groupId>
             <artifactId>circuit-breaker-core</artifactId>
-            <version>1.0.0</version>
+            <version>1.0.1</version>
         </dependency>
 
         <dependency>

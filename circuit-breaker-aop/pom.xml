@@ -6,7 +6,7 @@
     <parent>
         <groupId>io.github.dmitriy-iliyov</groupId>
         <artifactId>circuit-breaker-parent</artifactId>
-        <version>1.0.0</version>
+        <version>1.0.1</version>
     </parent>
 
     <artifactId>circuit-breaker-aop</artifactId>
@@ -17,7 +17,7 @@
         <dependency>
             <groupId>io.github.dmitriy-iliyov</groupId>
             <artifactId>circuit-breaker-core</artifactId>
-            <version>1.0.0</version>
+            <version>1.0.1</version>
             <scope>provided</scope>
         </dependency>
 
