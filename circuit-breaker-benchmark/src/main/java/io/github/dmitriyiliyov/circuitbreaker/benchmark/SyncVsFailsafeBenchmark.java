@@ -3,11 +3,7 @@ package io.github.dmitriyiliyov.circuitbreaker.benchmark;
 import dev.failsafe.Failsafe;
 import dev.failsafe.FailsafeExecutor;
 import io.github.dmitriyiliyov.circuitbreaker.core.CircuitBreaker;
-import io.github.dmitriyiliyov.circuitbreaker.core.CircuitBreakerFactory;
-import io.github.dmitriyiliyov.circuitbreaker.core.DefaultCircuitBreakerFactory;
-import io.github.dmitriyiliyov.circuitbreaker.core.DefaultCircuitBreakerRegistry;
 import io.github.dmitriyiliyov.circuitbreaker.core.config.CircuitBreakerConfiguration;
-import io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies.providers.*;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
 import org.openjdk.jmh.results.format.ResultFormatType;
@@ -17,9 +13,11 @@ import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 import java.time.Duration;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
+
+import static io.github.dmitriyiliyov.circuitbreaker.benchmark.BenchmarkSupport.*;
 
 @BenchmarkMode(Mode.Throughput)
 @OutputTimeUnit(TimeUnit.MICROSECONDS)
@@ -28,17 +26,6 @@ import java.util.concurrent.TimeUnit;
 @Fork(2)
 @Threads(8)
 public class SyncVsFailsafeBenchmark {
-
-    private static final CircuitBreakerFactory FACTORY = new DefaultCircuitBreakerFactory(
-            new DefaultCircuitBreakerRegistry(),
-            new DefaultStrategiesProvider(List.of(
-                    new SlidingWindowCloseStrategyProvider(),
-                    new LockFreeSlidingWindowCloseStrategyProvider(),
-                    new TimeBasedOpenStrategyProvider(),
-                    new CountBasedHalfOpenStrategyProvider(),
-                    new LockFreeCountBasedHalfOpenStrategyProvider())
-            )
-    );
 
     @State(Scope.Benchmark)
     public static class ClosedState {
@@ -55,7 +42,7 @@ public class SyncVsFailsafeBenchmark {
                     .observableExceptions(Set.of(RuntimeException.class))
                     .lockFree(false)
                     .closeState(c -> c.windowSize(1000).exceptionRateThreshold(0.5))
-                    .waitDurationInOpenState(Duration.ofMillis(1))
+                    .waitDurationInOpenState(Duration.ofHours(1))
                     .build());
 
             dev.failsafe.CircuitBreaker<Object> failsafeCb = dev.failsafe.CircuitBreaker.builder()
@@ -69,24 +56,12 @@ public class SyncVsFailsafeBenchmark {
 
     @Benchmark
     public void testClosed_myLibSync(ClosedState state, Blackhole bh) {
-        bh.consume(executeMy(state.myLibSync, () -> {
-            int sum = 0;
-            for (int i = 0; i < state.loopLimit; i++) {
-                sum += i;
-            }
-            return "ok" + sum;
-        }));
+        bh.consume(executeMy(state.myLibSync, () -> workload(state.loopLimit)));
     }
 
     @Benchmark
     public void testClosed_failsafe(ClosedState state, Blackhole bh) {
-        bh.consume(executeFailsafe(state.failsafeCbExecutor, () -> {
-            int sum = 0;
-            for (int i = 0; i < state.loopLimit; i++) {
-                sum += i;
-            }
-            return "ok" + sum;
-        }));
+        bh.consume(executeFailsafe(state.failsafeCbExecutor, () -> workload(state.loopLimit)));
     }
 
     @State(Scope.Benchmark)
@@ -190,15 +165,7 @@ public class SyncVsFailsafeBenchmark {
         bh.consume(executeFailsafe(state.failsafeCbExecutor, () -> "probe"));
     }
 
-    private static String executeMy(CircuitBreaker cb, java.util.function.Supplier<String> supplier) {
-        try {
-            return cb.execute(supplier::get);
-        } catch (Throwable t) {
-            return "fallback";
-        }
-    }
-
-    private static String executeFailsafe(FailsafeExecutor<Object> cb, java.util.function.Supplier<String> supplier) {
+    private static String executeFailsafe(FailsafeExecutor<Object> cb, Supplier<String> supplier) {
         try {
             return cb.get(supplier::get);
         } catch (Throwable t) {
