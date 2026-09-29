@@ -41,7 +41,7 @@ public class BusinessController {
 
     @GetMapping("/slow-request")
     public void slowRequest() throws InterruptedException {
-        service.unexpectableSlowBusinessOp();
+        service.unexpectedlySlowBusinessOp();
     }
 
     @GetMapping

@@ -25,18 +25,18 @@ public class BusinessService {
 
     @CircuitBreaker(name = "exampleCircuitBreaker")
     public void businessOpWithObservableException() {
-        // exceptionally HTTP call with observable exception
+        // failing HTTP call with observable exception
         throw new SpecificBusinessException("business exception");
     }
 
     @CircuitBreaker(name = "exampleCircuitBreaker")
     public void businessOpWithIgnorableException() {
-        // exceptionally HTTP call with ignorable exception
+        // failing HTTP call with ignorable exception
         throw new IllegalArgumentException();
     }
 
     @CircuitBreaker(name = "exampleCircuitBreaker")
-    public void unexpectableSlowBusinessOp() throws InterruptedException {
+    public void unexpectedlySlowBusinessOp() throws InterruptedException {
         // slow HTTP call
         Thread.sleep(110);
     }

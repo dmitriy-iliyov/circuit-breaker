@@ -22,7 +22,7 @@ public class ControllerAdvice {
     public ProblemDetail handleSlowRequestException() {
         return ProblemDetail.forStatusAndDetail(
                 HttpStatus.REQUEST_TIMEOUT,
-                "Request was to slow"
+                "Request was too slow"
         );
     }
 
