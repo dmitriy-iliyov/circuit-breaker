@@ -1,16 +1,20 @@
 package io.github.dmitriyiliyov.circuitbreaker.core.observe_strategies;
 
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import java.lang.reflect.Field;
 import java.time.Duration;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 
 public class SlidingWindowCloseStrategyUnitTests {
 
@@ -172,5 +176,21 @@ public class SlidingWindowCloseStrategyUnitTests {
 
         strategy.onException();
         assertThat(strategy.shouldTrip()).isEqualTo(params.answers().get(5).get(3));
+    }
+
+    @Test
+    @DisplayName("UT №6: lock-free strategy should keep recording events after the index counter overflows")
+    public void lockFree_indexOverflow_shouldKeepRecordingEvents() throws Exception {
+        LockFreeSlidingWindowCloseStrategy strategy = new LockFreeSlidingWindowCloseStrategy(10, 2, Duration.ZERO);
+        Field indexField = LockFreeSlidingWindowCloseStrategy.class.getDeclaredField("index");
+        indexField.setAccessible(true);
+        ((AtomicInteger) indexField.get(strategy)).set(Integer.MAX_VALUE);
+
+        assertThatCode(() -> {
+            strategy.onException();
+            strategy.onException();
+            strategy.onSuccess();
+        }).doesNotThrowAnyException();
+        assertThat(strategy.shouldTrip()).isTrue();
     }
 }

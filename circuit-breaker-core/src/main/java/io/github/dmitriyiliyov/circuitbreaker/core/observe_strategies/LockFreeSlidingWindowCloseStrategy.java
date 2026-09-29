@@ -45,7 +45,7 @@ public class LockFreeSlidingWindowCloseStrategy implements CloseStateStrategy {
     }
 
     private void recordEvent(int value) {
-        int currentIndex = index.getAndIncrement() % windowSize;
+        int currentIndex = Math.floorMod(index.getAndIncrement(), windowSize);
         window.set(currentIndex, value);
         int exceptionCount = calculateExceptionCount();
         shouldTrip.set(exceptionCount >= exceptionCountThreshold);
