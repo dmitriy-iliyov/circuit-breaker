@@ -19,7 +19,7 @@ public final class CircuitBreakerConfiguration {
     private final CloseStateConfiguration closeStateConfiguration;
     private final Duration waitDurationInOpenState;
     private final HalfOpenStateConfiguration halfOpenStateConfiguration;
-    private final boolean isRequestTimerEnable;
+    private final boolean isRequestTimerEnabled;
     private final Duration maxRequestExecutionDuration;
 
     private CircuitBreakerConfiguration(String name,
@@ -38,9 +38,9 @@ public final class CircuitBreakerConfiguration {
 
         this.maxRequestExecutionDuration = maxRequestExecutionDuration;
         if (this.maxRequestExecutionDuration == null) {
-            this.isRequestTimerEnable = false;
+            this.isRequestTimerEnabled = false;
         } else {
-            this.isRequestTimerEnable = true;
+            this.isRequestTimerEnabled = true;
         }
 
         // configuring set of observable and ignorable exceptions
@@ -53,7 +53,7 @@ public final class CircuitBreakerConfiguration {
 
         prepareObservableAndIgnorableExceptions(mutableObservable, mutableIgnorable, exceptionPriority);
 
-        if (this.isRequestTimerEnable && !mutableIgnorable.contains(SlowRequestException.class)) {
+        if (this.isRequestTimerEnabled && !mutableIgnorable.contains(SlowRequestException.class)) {
             mutableObservable.add(SlowRequestException.class);
         }
 
@@ -158,8 +158,8 @@ public final class CircuitBreakerConfiguration {
         return halfOpenStateConfiguration;
     }
 
-    public boolean isRequestTimerEnable() {
-        return isRequestTimerEnable;
+    public boolean isRequestTimerEnabled() {
+        return isRequestTimerEnabled;
     }
 
     public Duration getMaxRequestExecutionDuration() {
@@ -177,7 +177,7 @@ public final class CircuitBreakerConfiguration {
                 ", closeStateConfiguration=" + closeStateConfiguration +
                 ", waitDurationInOpenState=" + waitDurationInOpenState +
                 ", halfOpenStateConfiguration=" + halfOpenStateConfiguration +
-                ", isRequestTimerEnable=" + isRequestTimerEnable +
+                ", isRequestTimerEnabled=" + isRequestTimerEnabled +
                 ", maxRequestExecutionDuration=" + maxRequestExecutionDuration +
                 '}';
     }

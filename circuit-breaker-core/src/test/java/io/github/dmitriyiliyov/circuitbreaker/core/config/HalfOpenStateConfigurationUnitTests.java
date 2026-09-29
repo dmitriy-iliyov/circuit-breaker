@@ -46,12 +46,12 @@ public class HalfOpenStateConfigurationUnitTests {
     }
 
     @Test
-    @DisplayName("UT should throw exception when multiplier is zero or negative")
+    @DisplayName("UT should throw exception when multiplier is <= 1")
     public void shouldThrowExceptionWhenMultiplierIsInvalid() {
         assertThatThrownBy(() -> HalfOpenStateConfiguration.builder()
-                .multiplier(0.0))
+                .multiplier(1.0))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("multiplier cannot be <= 0");
+                .hasMessage("multiplier must be > 1");
     }
 
     @Test
@@ -73,7 +73,7 @@ public class HalfOpenStateConfigurationUnitTests {
                 .maxExceptionRateInHalfOpenState(0.9)
                 .build())
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("is not possible to supply both maxExceptionCountInHalfOpenState and maxExceptionRateInHalfOpenState parameters");
+                .hasMessage("it is not possible to supply both maxExceptionCountInHalfOpenState and maxExceptionRateInHalfOpenState parameters");
     }
 
     @Test

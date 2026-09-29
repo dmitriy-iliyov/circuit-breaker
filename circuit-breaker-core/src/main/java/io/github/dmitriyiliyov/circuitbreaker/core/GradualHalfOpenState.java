@@ -30,6 +30,9 @@ public class GradualHalfOpenState implements CircuitState, ConfigurableHalfOpenS
         this.circuitBreaker = Objects.requireNonNull(circuitBreaker, "circuitBreaker cannot be null");
         this.strategy = Objects.requireNonNull(strategy, "strategy cannot be null");
         this.timer = Objects.requireNonNull(timer, "timer cannot be null");
+        if (multiplier <= 1) {
+            throw new IllegalArgumentException("multiplier must be > 1");
+        }
         this.checker = circuitBreaker.getChecker();
         this.requestCount = new AtomicInteger(0);
         this.percentToLet = new AtomicInteger(10);
@@ -84,12 +87,16 @@ public class GradualHalfOpenState implements CircuitState, ConfigurableHalfOpenS
         }
     }
 
+    /**
+     * Lets exactly {@code percentToLet} requests out of every 100 through, spread evenly over the cycle.
+     */
     private boolean shouldExecute() {
         int currentPercent = percentToLet.get();
         if (currentPercent >= 100) {
             return true;
         }
-        return requestCount.incrementAndGet() % (100 / currentPercent) == 0;
+        int position = Math.floorMod(requestCount.getAndIncrement(), 100);
+        return (position + 1) * currentPercent / 100 != position * currentPercent / 100;
     }
 
     private void handleTrip() {
@@ -115,8 +122,11 @@ public class GradualHalfOpenState implements CircuitState, ConfigurableHalfOpenS
         }
     }
 
+    /**
+     * Rounds up so that every multiplier > 1 grows the percent by at least one.
+     */
     private int calculateNewPercent(int currentPercent) {
-        return Math.min(100, (int) (currentPercent * multiplier));
+        return Math.min(100, (int) Math.ceil(currentPercent * multiplier));
     }
 
     @Override

@@ -4,7 +4,7 @@ import java.util.Objects;
 
 public final class HalfOpenStateConfiguration {
 
-    private static final double DEFAULT_GRANULAR_MULTIPLIER = 2.0;
+    private static final double DEFAULT_GRADUAL_MULTIPLIER = 2.0;
     private final boolean isHalfOpenStateEnabled;
     private final HalfOpenType type;
     private final int maxRequestInHalfOpenState;
@@ -26,12 +26,12 @@ public final class HalfOpenStateConfiguration {
             this.isHalfOpenStateEnabled = true;
             this.type = type == null ? HalfOpenType.NORMAL : type;
 
-            this.maxRequestInHalfOpenState = Objects.requireNonNull(maxRequestInHalfOpenState, "maxRequestInHalfOpenState cannot be null");;
+            this.maxRequestInHalfOpenState = Objects.requireNonNull(maxRequestInHalfOpenState, "maxRequestInHalfOpenState cannot be null");
 
             boolean hasCount = maxExceptionCountInHalfOpenState != null;
             boolean hasRate = maxExceptionRateInHalfOpenState != null;
             if (hasCount && hasRate) {
-                throw new IllegalArgumentException("is not possible to supply both maxExceptionCountInHalfOpenState and maxExceptionRateInHalfOpenState parameters");
+                throw new IllegalArgumentException("it is not possible to supply both maxExceptionCountInHalfOpenState and maxExceptionRateInHalfOpenState parameters");
             }
             if (!hasCount && !hasRate) {
                 throw new IllegalArgumentException("either maxExceptionCountInHalfOpenState or maxExceptionRateInHalfOpenState must be non null and > 0");
@@ -41,7 +41,7 @@ public final class HalfOpenStateConfiguration {
                     : (int) Math.ceil(maxRequestInHalfOpenState * maxExceptionRateInHalfOpenState);
 
             if (HalfOpenType.GRADUAL.equals(this.type)) {
-                this.multiplier = multiplier == null ? DEFAULT_GRANULAR_MULTIPLIER : multiplier;
+                this.multiplier = multiplier == null ? DEFAULT_GRADUAL_MULTIPLIER : multiplier;
             } else {
                 this.multiplier = 0.0;
             }
@@ -135,8 +135,8 @@ public final class HalfOpenStateConfiguration {
 
         public Builder multiplier(Double multiplier) {
             Objects.requireNonNull(multiplier, "multiplier cannot be null");
-            if (multiplier <= 0) {
-                throw new IllegalArgumentException("multiplier cannot be <= 0");
+            if (multiplier <= 1) {
+                throw new IllegalArgumentException("multiplier must be > 1");
             }
             this.multiplier = multiplier;
             return this;

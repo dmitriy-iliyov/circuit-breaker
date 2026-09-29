@@ -294,7 +294,7 @@ public class CircuitBreakerConfigurationUnitTests {
     }
 
     @Test
-    @DisplayName("UT: isRequestTimerEnable should be true when maxRequestExecutionDuration is not null")
+    @DisplayName("UT: isRequestTimerEnabled should be true when maxRequestExecutionDuration is not null")
     void testRequestTimerEnabled() {
         CircuitBreakerConfiguration config = baseBuilder()
                 .observableExceptions(Set.of(RuntimeException.class))
@@ -303,11 +303,11 @@ public class CircuitBreakerConfigurationUnitTests {
                 .maxRequestExecutionDuration(Duration.ofSeconds(1))
                 .build();
 
-        assertThat(config.isRequestTimerEnable()).isTrue();
+        assertThat(config.isRequestTimerEnabled()).isTrue();
     }
 
     @Test
-    @DisplayName("UT: isRequestTimerEnable should be false when maxRequestExecutionDuration is null")
+    @DisplayName("UT: isRequestTimerEnabled should be false when maxRequestExecutionDuration is null")
     void testRequestTimerDisabled() {
         CircuitBreakerConfiguration config = baseBuilder()
                 .observableExceptions(Set.of(RuntimeException.class))
@@ -315,7 +315,7 @@ public class CircuitBreakerConfigurationUnitTests {
                 .exceptionPriority(ExceptionPriority.IGNORABLE)
                 .build();
 
-        assertThat(config.isRequestTimerEnable()).isFalse();
+        assertThat(config.isRequestTimerEnabled()).isFalse();
     }
 
     @Test

@@ -7,7 +7,7 @@ public final class RequestTimerFactory {
     private RequestTimerFactory() {}
 
     public static RequestTimer create(CircuitBreakerConfiguration configuration) {
-        if (configuration.isRequestTimerEnable()) {
+        if (configuration.isRequestTimerEnabled()) {
             return new DefaultRequestTimer(configuration.getMaxRequestExecutionDuration());
         }
         return new NoopRequestTimer();

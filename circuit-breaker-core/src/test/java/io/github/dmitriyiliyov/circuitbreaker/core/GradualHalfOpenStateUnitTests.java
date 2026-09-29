@@ -134,6 +134,46 @@ public class GradualHalfOpenStateUnitTests {
                         .isInstanceOf(GradualHalfOpenRefuseException.class);
             }
         }
+
+        @Test
+        @DisplayName("UT: should let exactly percentToLet requests out of 100 through when 100 is not divisible by percent")
+        void shouldLetExactPercentThrough_whenPercentDoesNotDivide100() throws Throwable {
+            forcePercentTo(40);
+
+            int passed = 0;
+            for (int i = 0; i < 100; i++) {
+                try {
+                    gradualState.execute(() -> {});
+                    passed++;
+                } catch (GradualHalfOpenRefuseException ignored) {}
+            }
+
+            assertThat(passed).isEqualTo(40);
+        }
+
+        @Test
+        @DisplayName("UT: should increase percent by at least one when multiplier is close to 1")
+        void shouldIncreasePercent_whenMultiplierIsCloseToOne() throws Throwable {
+            gradualState = new GradualHalfOpenState(circuitBreaker, openState, closeState, strategy, timer, 1.05);
+            when(strategy.getTransition()).thenReturn(HalfOpenTransition.TO_CLOSE);
+
+            for (int i = 0; i < 9; i++) {
+                try { gradualState.execute(() -> {}); } catch (GradualHalfOpenRefuseException ignored) {}
+            }
+            gradualState.execute(() -> {});
+
+            Field field = GradualHalfOpenState.class.getDeclaredField("percentToLet");
+            field.setAccessible(true);
+            assertThat(((AtomicInteger) field.get(gradualState)).get()).isEqualTo(11);
+        }
+    }
+
+    @Test
+    @DisplayName("UT: should throw exception when multiplier is <= 1")
+    void shouldThrowException_whenMultiplierIsNotGreaterThanOne() {
+        assertThatThrownBy(() -> new GradualHalfOpenState(circuitBreaker, openState, closeState, strategy, timer, 1.0))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("multiplier must be > 1");
     }
 
     @Nested
